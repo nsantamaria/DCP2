@@ -1,6 +1,7 @@
 import pandas as pd
 import json
 
+
 class Munging:
 
     def get_set(self, file):
@@ -26,5 +27,7 @@ if __name__ == '__main__':
                 if col_name in dframe.columns:
                     dframe.at[row_index, col_name] = row_value
                 else:
-                    dframe[col_name] = ['']*len(dframe)
+                    dframe[col_name] = [''] * len(dframe)
                     dframe.at[row_index, col_name] = row_value
+
+    print(dframe.iloc[:, -4:])
