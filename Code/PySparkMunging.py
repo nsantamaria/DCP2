@@ -7,10 +7,10 @@ def getFrame(path):
     return pd.read_csv(path)
 
 
-url = "/home/fneffati/DataSets/dcp2data/fbpac-ads-en-US.csv"
-dataframe = getFrame(url)
+file_path = "/home/fneffati/DataSets/dcp2data/fbpac-ads-en-US.csv"
+
 sc = pyspark.SparkContext("local[*]", "Test Context")
-rdd = sc.textFile(dataframe)
+rdd = sc.textFile(file_path)
 
 for row in rdd.take(5):
     print(row)
