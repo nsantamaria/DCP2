@@ -7,7 +7,7 @@ def getFrame(path):
     return pd.read_csv(path)
 
 
-url = ""
+url = "/home/fneffati/DataSets/dcp2data.csv"
 dataframe = getFrame(url)
 sc = pyspark.SparkContext("local[*]", "Test Context")
 rdd = sc.textFile(dataframe)
