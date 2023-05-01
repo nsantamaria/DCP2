@@ -7,6 +7,10 @@ def getFrame(path):
     return pd.read_csv(path)
 
 
+def splitter(row):
+    return row.split(',')
+
+
 file_path = "/home/fneffati/DataSets/dcp2data/fbpac-ads-en-US.csv"
 
 sc = pyspark.SparkContext("local[*]", "Test Context")
