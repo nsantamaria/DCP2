@@ -16,7 +16,9 @@ file_path = "/home/fneffati/DataSets/dcp2data/fbpac-ads-en-US.csv"
 sc = pyspark.SparkContext("local[*]", "Test Context")
 rdd = sc.textFile(file_path)
 
-for row in rdd.take(5):
-    print(row)
+split_rows = rdd.map(splitter)
+
+for row in split_rows.take(5):
+    print(row[15])
 
 
