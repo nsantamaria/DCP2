@@ -27,6 +27,6 @@ split_rows = rdd.map(splitter)
 raw_targets = split_rows.map(target_extractor)
 
 for row in raw_targets.take(5):
-    print(row[15])
+    print(row)
 
 
