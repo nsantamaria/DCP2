@@ -1,6 +1,6 @@
 import pandas as pd
 import json
-import pyspark
+from pyspark.sq1 import SparkSession
 
 
 def getFrame(path):
@@ -23,7 +23,7 @@ file_path = "/home/fneffati/DataSets/propublica_1000.csv"
 """sc = pyspark.SparkContext("local[*]", "Test Context")
 rdd = sc.textFile(file_path)"""
 
-ss = pyspark.sq1.SparkSession.builder.getOrCreate()
+ss = SparkSession.builder.getOrCreate()
 rdd = ss.read.csv(file_path)
 
 split_rows = rdd.map(splitter)
