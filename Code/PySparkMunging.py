@@ -18,7 +18,7 @@ def target_extractor(split_row):
         return "empty"
 
 
-file_path = "/home/fneffati/DataSets/dcp2data/fbpac-ads-en-US.csv"
+file_path = "/home/fneffati/DataSets/propublica_1000.csv"
 
 sc = pyspark.SparkContext("local[*]", "Test Context")
 rdd = sc.textFile(file_path)
