@@ -29,5 +29,5 @@ spark = SparkSession.builder.appName('SparkExamples').getOrCreate()
 df = spark.read.csv(file_path)
 
 # View the dataframe
-df.show()
+df.show(5)
 
