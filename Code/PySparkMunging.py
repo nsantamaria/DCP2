@@ -18,7 +18,7 @@ def col_name_extractor(row):
     row = json.loads(row)
     result = []
     for item in row:
-        if len(item["target"]) > 2:
+        if len(item["target"]) < 2:
             result.append("target" + "_" + item["target"])
     return result
 
@@ -54,6 +54,6 @@ unique_set = set(flattened_rdd.collect())
 unique_set = list(unique_set)
 print(unique_set)
 
-df = df.withColumn(unique_set, lit(None))
+df = df.withColumn(unique_set, lit("None"))
 df.show(5)
 
