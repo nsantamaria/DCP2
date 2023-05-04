@@ -84,31 +84,18 @@ print("\n")
 columns_list = cols.collect()
 values_list = vals.collect()
 
-print(columns_list)
-print(values_list)
-print("\n")
+# print(columns_list)
+# print(values_list)
 
 
-# Map function to populate columns
-def populate_columns(row):
-    index = row[0]
-    col_group = row[1]
-
-    for col_name in col_group:
-        print(col_name, values_list[index][columns_list.index(col_name)], "\n")
-        row[col_name] = values_list[index][columns_list.index(col_name)]
-
-    return row
-
-
-# Apply map function to each row of the DataFrame
-mapped_rdd = df.rdd.map(lambda row: populate_columns(row))
-
-# Convert the mapped RDD back to a DataFrame
-result_df = spark.createDataFrame(mapped_rdd, df.columns)
+for index1, col_group in enumerate(columns_list):
+    column_index = index1
+    for index2, col_name in enumerate(col_group):
+        row_index = index2
+        df[col_name][row_index] = values_list[column_index][row_index]
 
 # Show the result DataFrame
-result_df.show()
+df.show()
 
 """
 I don't need to flatten them 
