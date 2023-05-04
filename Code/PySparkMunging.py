@@ -13,12 +13,8 @@ def quoter(row):
     return re.sub('""', '"', row)
 
 
-def json_converter(row):
-    row = json.loads(row)
-    return col_name_extractor(row)
-
-
 def col_name_extractor(row):
+    row = json.loads(row)
     result = []
     for item in row:
         result.append("target" + "_" + item["target"])
@@ -38,9 +34,6 @@ rdd = df.select("targets").rdd
 rdd2 = rdd.map(lambda x: x[0])
 rdd3 = rdd2.map(quoter)
 
-jsoned_set = rdd3.map(json_converter)
-print(jsoned_set.take(5))
-
-cols = jsoned_set.map(col_name_extractor)
+cols = rdd3.map(col_name_extractor)
 print(cols.take(5))
 
