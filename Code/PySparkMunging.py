@@ -10,7 +10,7 @@ def quoter(row):
     :param row: A cell from the Targets Column
     :return: a valid JSON format String
     """
-    return re.sub('""', '"', row)
+    return re.sub('""', '"', row[1])
 
 
 def col_name_extractor(row):
