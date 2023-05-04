@@ -96,7 +96,7 @@ for item in columns_list:
     column_index = item[0]
     col_group = item[1]
     print(col_group, column_index)
-    for col_name, index2 in enumerate(col_group):
+    for index2, col_name in enumerate(col_group):
         row_index = index2
         print(col_name, row_index)
         print(values_list[column_index][row_index])
