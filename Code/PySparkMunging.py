@@ -95,6 +95,7 @@ def populate_columns(row):
     col_group = row[1]
 
     for col_name in col_group:
+        print(col_name, values_list[index][columns_list.index(col_name)], "\n")
         row[col_name] = values_list[index][columns_list.index(col_name)]
 
     return row
