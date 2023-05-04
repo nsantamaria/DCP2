@@ -1,4 +1,3 @@
-import pandas as pd
 import json
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import lit
@@ -27,7 +26,10 @@ def value_extractor(row):
     row = json.loads(row)
     result = []
     for item in row:
-        result.append(item["segment"])
+        try:
+            result.append(item["segment"])
+        except:
+            continue
     return result
 
 
@@ -45,17 +47,23 @@ rdd2 = rdd.map(lambda x: x[0])
 rdd3 = rdd2.map(quoter)
 
 cols = rdd3.map(col_name_extractor)
-print(cols.take(5))
+# print(cols.take(5))
 
 flattened_rdd = cols.flatMap(lambda x: x)
 
 # Convert the flattened RDD into a set
 unique_set = set(flattened_rdd.collect())
 unique_set = list(unique_set)
-print(unique_set)
+# print(unique_set)
 
 for col_name in unique_set:
     df = df.withColumn(col_name, lit(" "))
 
-df.show(5)
+# df.show(5)
 
+rdd = df.select("segment").rdd
+rdd2 = rdd.map(lambda x: x[0])
+rdd3 = rdd2.map(quoter)
+
+cols = rdd3.map(value_extractor)
+print(cols.take(5))
