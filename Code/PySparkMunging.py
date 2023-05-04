@@ -92,10 +92,10 @@ rdd = df.rdd
 
 modified_rdd = rdd
 # TODO: Turn this bit into MAP function
-for index1, col_group in enumerate(columns_list):
-    column_index = index1
+for col_group in columns_list:
+    column_index = col_group[0]
     print(col_group, column_index)
-    for index2, col_name in enumerate(col_group):
+    for col_name, index2 in enumerate(col_group):
         row_index = index2
         print(col_name, row_index)
         # df.select(col_name)[row_index] = values_list[column_index][row_index]
