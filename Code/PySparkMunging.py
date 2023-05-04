@@ -106,7 +106,7 @@ for item in columns_list:
 updated_df = modified_rdd.toDF()
 
 # Show the result DataFrame
-updated_df.show(truncated=False)
+updated_df.show(truncate=False)
 
 """
 I don't need to flatten them 
