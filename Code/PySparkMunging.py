@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import lit
+from pyspark.sql.functions import col
 import re
 
 
@@ -54,6 +54,8 @@ unique_set = set(flattened_rdd.collect())
 unique_set = list(unique_set)
 print(unique_set)
 
-df = df.withColumn(unique_set, lit("None"))
+for col_name in unique_set:
+    df = df.withColumn(col_name, col("letter"))
+
 df.show(5)
 
