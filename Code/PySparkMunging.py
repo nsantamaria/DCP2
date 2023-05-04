@@ -45,7 +45,7 @@ rdd3 = rdd2.map(quoter)
 cols = rdd3.map(col_name_extractor)
 print(cols.take(5))
 
-flattened_rdd = rdd3.flatMap(lambda x: x)
+flattened_rdd = cols.flatMap(lambda x: x)
 
 # Convert the flattened RDD into a set
 unique_set = set(flattened_rdd.collect())
