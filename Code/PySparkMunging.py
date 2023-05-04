@@ -99,9 +99,6 @@ for item in columns_list:
     for index2, col_name in enumerate(col_group):
         row_index = index2
         print(col_name, row_index, ": ", values_list[column_index][row_index])
-        # df.select(col_name)[row_index] = values_list[column_index][row_index]
-
-        # Modify a specific cell in the RDD
         modified_rdd = rdd.zipWithIndex().map(lambda row: (row.col_name, values_list[column_index][row_index]) if row[0] == row_index else row)
 
 
@@ -109,7 +106,7 @@ for item in columns_list:
 updated_df = modified_rdd.toDF(["Name", "Age"])
 
 # Show the result DataFrame
-updated_df.show()
+updated_df.show(truncated=False)
 
 """
 I don't need to flatten them 
