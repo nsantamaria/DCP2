@@ -13,9 +13,16 @@ def quoter(row):
     return re.sub('""', '"', row)
 
 
-def col_name_extractor(row):
+def json_converter(row):
     row = json.loads(row)
-    return "target" + "_" + row["target"]
+    return col_name_extractor(row)
+
+
+def col_name_extractor(row):
+    result = []
+    for item in row:
+        result.append("target" + "_" + item["target"])
+    return result
 
 
 file_path = "/home/fneffati/DataSets/propublica_1000.csv"
@@ -31,6 +38,9 @@ rdd = df.select("targets").rdd
 rdd2 = rdd.map(lambda x: x[0])
 rdd3 = rdd2.map(quoter)
 
-cols = rdd3.map(col_name_extractor)
+jsoned_set = rdd3.map(json_converter)
+print(jsoned_set.take(5))
+
+cols = jsoned_set.map(col_name_extractor)
 print(cols.take(5))
 
