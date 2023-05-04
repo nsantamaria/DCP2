@@ -101,7 +101,7 @@ for index1, col_group in enumerate(columns_list):
         # df.select(col_name)[row_index] = values_list[column_index][row_index]
 
         # Modify a specific cell in the RDD
-        modified_rdd = rdd.zipWithIndex().map(lambda row: (row.col_name, values_list[column_index][row_index])if row[0] == row_index)
+        modified_rdd = rdd.zipWithIndex().map(lambda row: (row.col_name, values_list[column_index][row_index]) if row[0] == row_index else row)
 
 
         # Convert the modified RDD back to a DataFrame
