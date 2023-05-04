@@ -1,6 +1,7 @@
 import pandas as pd
 import json
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import lit
 import re
 
 
@@ -53,6 +54,6 @@ unique_set = set(flattened_rdd.collect())
 unique_set = list(unique_set)
 print(unique_set)
 
-df = spark.createDataFrame(data=df, schema=unique_set)
+df = df.withColumn(unique_set, lit(None))
 df.show(5)
 
