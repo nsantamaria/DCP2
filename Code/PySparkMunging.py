@@ -15,7 +15,7 @@ spark = SparkSession.builder \
 df = spark.read.csv(file_path, header=True, inferSchema=True, multiLine=True, sep=',', escape='"',
                     ignoreLeadingWhiteSpace=True)
 
-df.select("targets").show(5, truncuate=False)
+df.select("targets").show(5, truncate=False)
 rdd = df.select("targets").rdd
 
 jsoned_set = rdd.map(json_converter)
