@@ -2,10 +2,8 @@ import pandas as pd
 import json
 import pyspark
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
 
-spark = SparkSession.builder \
-                    .master('local[1]') \
-                    .getOrCreate()
 
 def getFrame(path):
     return pd.read_csv(path)
@@ -21,13 +19,10 @@ def target_extractor(split_row):
 
 file_path = "/home/fneffati/DataSets/propublica_1000.csv"
 
-sc = pyspark.SparkContext("local[*]", "Test Context")
-rdd = spark.read.csv(file_path, header=True, inferSchema=True, multiLine=True, sep=',', escape='"',
-                  ignoreLeadingWhiteSpace=True)
+spark = SparkSession.builder \
+    .master('local[1]') \
+    .getOrCreate()
+df = spark.read.csv(file_path, header=True, inferSchema=True, multiLine=True, sep=',', escape='"',
+                    ignoreLeadingWhiteSpace=True)
 
-split_rows = rdd.map(splitter)
-raw_targets = split_rows.map(target_extractor)
-
-# View the dataframe
-for row in raw_targets.take(5):
-    print(row)
+df.select("targets").show(5)
