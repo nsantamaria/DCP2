@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col
+from pyspark.sql.functions import lit
 import re
 
 
@@ -55,7 +55,7 @@ unique_set = list(unique_set)
 print(unique_set)
 
 for col_name in unique_set:
-    df = df.withColumn(col_name, col("letter"))
+    df = df.withColumn(col_name, lit(" "))
 
 df.show(5)
 
