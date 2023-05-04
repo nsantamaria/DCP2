@@ -92,8 +92,9 @@ rdd = df.rdd
 
 modified_rdd = rdd
 # TODO: Turn this bit into MAP function
-for col_group in columns_list:
-    column_index = col_group[0]
+for item in columns_list:
+    column_index = item[0]
+    col_group = item[1]
     print(col_group, column_index)
     for col_name, index2 in enumerate(col_group):
         row_index = index2
