@@ -103,7 +103,7 @@ for item in columns_list:
 
 
         # Convert the modified RDD back to a DataFrame
-updated_df = modified_rdd.toDF(["Name", "Age"])
+updated_df = modified_rdd.toDF()
 
 # Show the result DataFrame
 updated_df.show(truncated=False)
