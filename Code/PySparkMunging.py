@@ -69,10 +69,56 @@ df.select("targets").show(5, truncate=False)
 
 jsoned_rdd = json_ready(df)
 
-cols = jsoned_rdd.map(col_name_extractor)
-cols_unique_list = flattner(cols)
-print(cols_unique_list)
+cols = jsoned_rdd.map(col_name_extractor)      # 2D RDD of the columns per cell
+flat_cols_unique_list = flattner(cols)         # list of unique column names
+print(flat_cols_unique_list)
 
-vals = jsoned_rdd.map(value_extractor)
-vals_unique_list = flattner(vals)
-print(vals_unique_list)
+# Add the unique columns as empty columns to the Dataframe
+for col_name in flat_cols_unique_list:
+    df = df.withColumn(col_name, lit(" "))
+
+
+vals = jsoned_rdd.map(value_extractor)         # 2D RDD of the values per cell
+print(vals)
+
+columns_list = cols.collect()
+values_list = vals.collect()
+
+for i, row in enumerate(df.collect()):
+    # Get the row values
+    row_values = list(row)
+
+    # Get the corresponding columns and values
+    row_columns = columns_list[i]
+    row_values_to_insert = values_list[i]
+
+    # Populate the columns with values
+    for col_name, col_value in zip(row_columns, row_values_to_insert):
+        df = df.withColumn(col_name, col_value)
+
+# Show the updated DataFrame
+df.show()
+
+"""
+I don't need to flatten them 
+All I need to do is get the list of unique column names 
+Then Add them all as empty columns to the Dataframe 
+
+
+Once i DO  THAT 
+
+
+
+I need to also get another list of all the column names in a 2d array format, 
+so that every index of that array is actually what every cell holds
+
+
+Once I do that ,
+
+
+
+I get the 2d array of the values 
+so that every index of that array is actually what every cell holds
+
+And then I iterate using both 
+"""
