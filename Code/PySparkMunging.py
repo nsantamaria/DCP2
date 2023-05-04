@@ -72,11 +72,11 @@ jsoned_rdd = json_ready(df)
 cols = jsoned_rdd.map(col_name_extractor)      # 2D RDD of the columns per cell
 flat_cols_unique_list = flattner(cols)         # list of unique column names
 print(flat_cols_unique_list)
-
+"""
 # Add the unique columns as empty columns to the Dataframe
 for col_name in flat_cols_unique_list:
     df = df.withColumn(col_name, lit(" "))
-
+"""
 
 vals = jsoned_rdd.map(value_extractor)         # 2D RDD of the values per cell
 print(vals.take(5))
