@@ -87,15 +87,28 @@ values_list = vals.collect()
 # print(columns_list)
 # print(values_list)
 
+# Convert the DataFrame to an RDD
+rdd = df.rdd
 
+modified_rdd = rdd
+# TODO: Turn this bit into MAP function
 for index1, col_group in enumerate(columns_list):
     column_index = index1
+    print(col_group, column_index)
     for index2, col_name in enumerate(col_group):
         row_index = index2
-        df[col_name][row_index] = values_list[column_index][row_index]
+        print(col_name, row_index)
+        # df.select(col_name)[row_index] = values_list[column_index][row_index]
+
+        # Modify a specific cell in the RDD
+        modified_rdd = rdd.zipWithIndex().map(lambda row: (row.col_name, values_list[column_index][row_index])if row[0] == row_index)
+
+
+        # Convert the modified RDD back to a DataFrame
+updated_df = modified_rdd.toDF(["Name", "Age"])
 
 # Show the result DataFrame
-df.show()
+updated_df.show()
 
 """
 I don't need to flatten them 
