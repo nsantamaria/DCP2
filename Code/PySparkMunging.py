@@ -10,7 +10,8 @@ def quoter(row):
     :param row: A cell from the Targets Column
     :return: a valid JSON format String
     """
-    return re.sub('""', '"', row[1])
+    print(row[1])
+    return [row[0], re.sub('""', '"', row[1])]
 
 
 def col_name_extractor(row):
@@ -52,7 +53,7 @@ def json_ready(df):
     :return: a cleaned up and JSON processing ready PySpark RDD of that column
     """
     rdd = df.select("targets").rdd
-    rdd2 = rdd.zipWithIndex().map(lambda x: (x[1], x[0]))
+    rdd2 = rdd.zipWithIndex().map(lambda x: (x[1], x[0][0]))
     print(rdd2.take(5))
     rdd3 = rdd2.map(quoter)
 
