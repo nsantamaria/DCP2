@@ -21,6 +21,14 @@ def col_name_extractor(row):
     return result
 
 
+def value_extractor(row):
+    row = json.loads(row)
+    result = []
+    for item in row:
+        result.append(item["segment"])
+    return result
+
+
 file_path = "/home/fneffati/DataSets/propublica_1000.csv"
 
 spark = SparkSession.builder \
@@ -37,3 +45,8 @@ rdd3 = rdd2.map(quoter)
 cols = rdd3.map(col_name_extractor)
 print(cols.take(5))
 
+flattened_rdd = rdd.flatMap(lambda x: x)
+
+# Convert the flattened RDD into a set
+unique_set = set(flattened_rdd.collect())
+print(unique_set)
