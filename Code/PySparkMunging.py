@@ -56,12 +56,13 @@ unique_set = set(flattened_rdd.collect())
 unique_set = list(unique_set)
 # print(unique_set)
 
+df1 = df
 for col_name in unique_set:
     df = df.withColumn(col_name, lit(" "))
 
 # df.show(5)
-
-rdd = df.select("segment").rdd
+df2 = df
+rdd = df2.select("segment").rdd
 rdd2 = rdd.map(lambda x: x[0])
 rdd3 = rdd2.map(quoter)
 
