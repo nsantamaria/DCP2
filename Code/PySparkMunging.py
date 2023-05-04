@@ -18,7 +18,7 @@ def col_name_extractor(row):
     row = json.loads(row)
     result = []
     for item in row:
-        if len(item["target"]) < 2:
+        if len(item["target"]) == 1:
             result.append("target" + "_" + item["target"])
     return result
 
