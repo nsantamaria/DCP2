@@ -17,6 +17,10 @@ def json_converter(row):
     return json.loads(row)
 
 
+def col_name_extractor(row):
+    return "target" + "_" + row["target"]
+
+
 file_path = "/home/fneffati/DataSets/propublica_1000.csv"
 
 spark = SparkSession.builder \
@@ -27,9 +31,12 @@ df = spark.read.csv(file_path, header=True, inferSchema=True, multiLine=True, se
 
 df.select("targets").show(5, truncate=False)
 rdd = df.select("targets").rdd
-rdd2 = rdd.map(lambda x: x[0][1:len(x[0])])
+rdd2 = rdd.map(lambda x: x[0])
 rdd3 = rdd2.map(quoter)
 
 jsoned_set = rdd3.map(json_converter)
 print(jsoned_set.take(5))
+
+cols = jsoned_set.map(col_name_extractor)
+print(cols.take(5))
 
