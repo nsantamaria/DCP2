@@ -33,6 +33,31 @@ def value_extractor(row):
     return result
 
 
+def flattner(rdd):
+    """
+
+    :param rdd: the RDD Of either the Columns or the Values extracted from the targets column
+    :return: A flat list of those values
+    """
+    flattened_rdd = rdd.flatMap(lambda x: x)
+    unique_set = set(flattened_rdd.collect())
+
+    return list(unique_set)
+
+
+def json_ready(df):
+    """
+    Takes the Targets Columns and returns in
+    :param df: The Dataframe of the targets column
+    :return: a cleaned up and JSON processing ready PySpark RDD of that column
+    """
+    rdd = df.select("targets").rdd
+    rdd2 = rdd.map(lambda x: x[0])
+    rdd3 = rdd2.map(quoter)
+
+    return rdd3
+
+
 file_path = "/home/fneffati/DataSets/propublica_1000.csv"
 
 spark = SparkSession.builder \
@@ -40,31 +65,14 @@ spark = SparkSession.builder \
     .getOrCreate()
 df = spark.read.csv(file_path, header=True, inferSchema=True, multiLine=True, sep=',', escape='"',
                     ignoreLeadingWhiteSpace=True)
-
 df.select("targets").show(5, truncate=False)
-rdd = df.select("targets").rdd
-rdd2 = rdd.map(lambda x: x[0])
-rdd3 = rdd2.map(quoter)
 
-cols = rdd3.map(col_name_extractor)
-# print(cols.take(5))
+jsoned_rdd = json_ready(df)
 
-flattened_rdd = cols.flatMap(lambda x: x)
+cols = jsoned_rdd.map(col_name_extractor)
+cols_unique_list = flattner(cols)
+print(cols_unique_list)
 
-# Convert the flattened RDD into a set
-unique_set = set(flattened_rdd.collect())
-unique_set = list(unique_set)
-# print(unique_set)
-
-df1 = df
-for col_name in unique_set:
-    df = df.withColumn(col_name, lit(" "))
-
-# df.show(5)
-df2 = df
-rdd = df2.select("segment").rdd
-rdd2 = rdd.map(lambda x: x[0])
-rdd3 = rdd2.map(quoter)
-
-cols = rdd3.map(value_extractor)
-print(cols.take(5))
+vals = jsoned_rdd.map(value_extractor)
+vals_unique_list = flattner(vals)
+print(vals_unique_list)
