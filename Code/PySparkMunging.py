@@ -79,10 +79,14 @@ for col_name in flat_cols_unique_list:
 
 
 vals = jsoned_rdd.map(value_extractor)         # 2D RDD of the values per cell
-print(vals)
-
+print(vals.get(5))
+print("\n")
 columns_list = cols.collect()
 values_list = vals.collect()
+
+print(columns_list)
+print(values_list)
+print("\n")
 
 for i, row in enumerate(df.collect()):
     # Get the row values
