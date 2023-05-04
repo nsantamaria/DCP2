@@ -47,6 +47,6 @@ print(cols.take(5))
 
 flattened_rdd = rdd3.flatMap(lambda x: x)
 
-# Convert the flattened RDD into a set
-unique_set = set(flattened_rdd.collect())
-print(unique_set)
+"""# Convert the flattened RDD into a set
+unique_set = set(flattened_rdd.collect())"""
+print(flattened_rdd)
