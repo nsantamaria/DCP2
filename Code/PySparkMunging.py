@@ -10,7 +10,6 @@ def quoter(row):
     :param row: A cell from the Targets Column
     :return: a valid JSON format String
     """
-    print(row[1])
     return [row[0], re.sub('""', '"', row[1])]
 
 
@@ -54,7 +53,6 @@ def json_ready(df):
     """
     rdd = df.select("targets").rdd
     rdd2 = rdd.zipWithIndex().map(lambda x: (x[1], x[0][0]))
-    print(rdd2.take(5))
     rdd3 = rdd2.map(quoter)
 
     return rdd3
@@ -74,11 +72,11 @@ jsoned_rdd = json_ready(df)
 cols = jsoned_rdd.map(col_name_extractor)      # 2D RDD of the columns per cell
 flat_cols_unique_list = flattner(cols)         # list of unique column names
 print(flat_cols_unique_list)
-"""
+
 # Add the unique columns as empty columns to the Dataframe
 for col_name in flat_cols_unique_list:
     df = df.withColumn(col_name, lit(" "))
-"""
+
 
 vals = jsoned_rdd.map(value_extractor)         # 2D RDD of the values per cell
 print(vals.take(5))
@@ -97,7 +95,7 @@ def populate_columns(row):
     col_group = row[1]
 
     for col_name in col_group:
-        row[col_name] = values_list[index][col_group.index(col_name)]
+        row[col_name] = values_list[index][columns_list.index(col_name)]
 
     return row
 
