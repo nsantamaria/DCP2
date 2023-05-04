@@ -98,8 +98,7 @@ for item in columns_list:
     print(col_group, column_index)
     for index2, col_name in enumerate(col_group):
         row_index = index2
-        print(col_name, row_index)
-        print(values_list[column_index][row_index])
+        print(col_name, row_index, ": ", values_list[column_index][row_index])
         # df.select(col_name)[row_index] = values_list[column_index][row_index]
 
         # Modify a specific cell in the RDD
