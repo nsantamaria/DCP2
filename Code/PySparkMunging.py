@@ -29,7 +29,7 @@ def value_extractor(row):
         try:
             result.append(item["segment"])
         except:
-            continue
+            result.append(" ")
     return result
 
 
