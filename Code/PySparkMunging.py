@@ -14,18 +14,18 @@ def quoter(row):
 
 
 def col_name_extractor(row):
-    row = json.loads(row)
+    row1 = json.loads(row[1])
     result = []
-    for item in row:
+    for item in row1:
         if " " not in item["target"]:
             result.append("target" + "_" + item["target"])
-    return result
+    return [row[0], result]
 
 
 def value_extractor(row):
-    row = json.loads(row)
+    row1 = json.loads(row[1])
     result = []
-    for item in row:
+    for item in row1:
         try:
             result.append(item["segment"])
         except:
@@ -39,7 +39,7 @@ def flattner(rdd):
     :param rdd: the RDD Of either the Columns or the Values extracted from the targets column
     :return: A flat list of those values
     """
-    flattened_rdd = rdd.flatMap(lambda x: x)
+    flattened_rdd = rdd.flatMap(lambda x: x[1])
     unique_set = set(flattened_rdd.collect())
 
     return list(unique_set)
@@ -52,7 +52,7 @@ def json_ready(df):
     :return: a cleaned up and JSON processing ready PySpark RDD of that column
     """
     rdd = df.select("targets").rdd
-    rdd2 = rdd.map(lambda x: x[0])
+    rdd2 = rdd.zipWithIndex().map(lambda x: (x[1], x[0]))
     rdd3 = rdd2.map(quoter)
 
     return rdd3
@@ -88,20 +88,26 @@ print(columns_list)
 print(values_list)
 print("\n")
 
-for i, row in enumerate(df.collect()):
-    # Get the row values
-    row_values = list(row)
 
-    # Get the corresponding columns and values
-    row_columns = columns_list[i]
-    row_values_to_insert = values_list[i]
+# Map function to populate columns
+def populate_columns(row):
+    index = row[0]
+    col_group = row[1]
 
-    # Populate the columns with values
-    for col_name, col_value in zip(row_columns, row_values_to_insert):
-        df = df.withColumn(col_name, lit(col_value))
+    for col_name in col_group:
+        row[col_name] = values_list[index][col_group.index(col_name)]
 
-# Show the updated DataFrame
-df.show()
+    return row
+
+
+# Apply map function to each row of the DataFrame
+mapped_rdd = df.rdd.map(lambda row: populate_columns(row))
+
+# Convert the mapped RDD back to a DataFrame
+result_df = spark.createDataFrame(mapped_rdd, df.columns)
+
+# Show the result DataFrame
+result_df.show()
 
 """
 I don't need to flatten them 
@@ -125,4 +131,6 @@ I get the 2d array of the values
 so that every index of that array is actually what every cell holds
 
 And then I iterate using both 
+
+Now that I have a 
 """
