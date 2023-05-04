@@ -53,7 +53,7 @@ def json_ready(df):
     """
     rdd = df.select("targets").rdd
     rdd2 = rdd.zipWithIndex().map(lambda x: (x[1], x[0]))
-    print(rdd2.get(5))
+    print(rdd2.take(5))
     rdd3 = rdd2.map(quoter)
 
     return rdd3
