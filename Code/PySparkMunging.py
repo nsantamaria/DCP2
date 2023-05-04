@@ -1,20 +1,10 @@
 import pandas as pd
 import json
-import pyspark
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col
 
 
-def getFrame(path):
-    return pd.read_csv(path)
-
-
-def splitter(row):
-    return row.split(',')
-
-
-def target_extractor(split_row):
-    return split_row[15]
+def json_converter(row):
+    return json.loads(row)
 
 
 file_path = "/home/fneffati/DataSets/propublica_1000.csv"
@@ -25,4 +15,8 @@ spark = SparkSession.builder \
 df = spark.read.csv(file_path, header=True, inferSchema=True, multiLine=True, sep=',', escape='"',
                     ignoreLeadingWhiteSpace=True)
 
-df.select("targets").show(5)
+df.select("targets").show(5, truncuate=False)
+rdd = df.select("targets").rdd
+
+jsoned_set = rdd.map(json_converter)
+print(jsoned_set.take(5))
