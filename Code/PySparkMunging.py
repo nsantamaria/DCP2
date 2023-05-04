@@ -17,7 +17,8 @@ def col_name_extractor(row):
     row = json.loads(row)
     result = []
     for item in row:
-        result.append("target" + "_" + item["target"])
+        if len(item["target"]) > 2:
+            result.append("target" + "_" + item["target"])
     return result
 
 
@@ -49,4 +50,9 @@ flattened_rdd = cols.flatMap(lambda x: x)
 
 # Convert the flattened RDD into a set
 unique_set = set(flattened_rdd.collect())
+unique_set = list(unique_set)
 print(unique_set)
+
+df = spark.createDataFrame(data=df, schema=unique_set)
+df.show(5)
+
