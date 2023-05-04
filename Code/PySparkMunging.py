@@ -98,7 +98,7 @@ for i, row in enumerate(df.collect()):
 
     # Populate the columns with values
     for col_name, col_value in zip(row_columns, row_values_to_insert):
-        df = df.withColumn(col_name, col_value)
+        df = df.withColumn(col_name, lit(col_value))
 
 # Show the updated DataFrame
 df.show()
