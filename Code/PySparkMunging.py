@@ -1,6 +1,6 @@
 import json
 from pyspark.sql import SparkSession, Row
-from pyspark.sql.functions import  col, lit
+from pyspark.sql.functions import  col, when
 import re
 
 
@@ -73,9 +73,9 @@ cols = jsoned_rdd.map(col_name_extractor)  # 2D RDD of the columns per cell
 flat_cols_unique_list = flattner(cols)     # list of unique column names
 print(flat_cols_unique_list)
 
-# Add the unique columns as empty columns to the Dataframe
+"""# Add the unique columns as empty columns to the Dataframe
 for col_name in flat_cols_unique_list:
-    df = df.withColumn(col_name, lit(" "))
+    df = df.withColumn(col_name, lit(" "))"""
 
 vals = jsoned_rdd.map(value_extractor)     # 2D RDD of the values per cell
 print(vals.take(5))
@@ -86,27 +86,20 @@ values_list = vals.collect()
 rdd = df.rdd
 modified_rdd = rdd
 # TODO: Turn this bit into MAP function
-new_rows = []
+# Create an empty dataframe
+new_df = spark.createDataFrame([], [])
+
 for item in columns_list:
     column_index = item[0]
     col_group = item[1]
     for index2, col_name in enumerate(col_group):
         row_index = index2
         value = values_list[column_index][row_index]
-        new_row = Row(col_name=col_name, value=value)
-        new_rows.append(new_row)
+        # Add a new column to the dataframe with the corresponding value
+        new_df = new_df.withColumn(col_name, when(col("row_index") == row_index, value))
 
-# Create a new DataFrame using the new rows
-new_df = spark.createDataFrame(new_rows)
-new_df.show(5)
+# Drop the row_index column
+new_df = new_df.drop("row_index")
 
-
-
-new_df = spark.createDataFrame(columns_list, ["column_index", "col_group"])  # Create DataFrame from columns_list
-
-for index, col_name in enumerate(values_list):
-    new_df = new_df.withColumn(str(index), col("col_group")[index])  # Create new columns with values from values_list
-
-new_df = new_df.drop("col_group")  # Drop the original col_group column
-
-new_df.show()  # Display the new DataFrame in wide format
+# Show the resulting dataframe
+new_df.show()
