@@ -1,5 +1,5 @@
 import json
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, Row
 from pyspark.sql.functions import  col, lit
 import re
 
@@ -84,13 +84,18 @@ columns_list = cols.collect()
 values_list = vals.collect()
 
 rdd = df.rdd
-
 modified_rdd = rdd
 # TODO: Turn this bit into MAP function
+new_rows = []
 for item in columns_list:
     column_index = item[0]
     col_group = item[1]
-    print(col_group, column_index)
     for index2, col_name in enumerate(col_group):
         row_index = index2
-        print(col_name, row_index, ": ", values_list[column_index][row_index])
+        value = values_list[column_index][row_index]
+        new_row = Row(col_name=col_name, value=value)
+        new_rows.append(new_row)
+
+# Create a new DataFrame using the new rows
+new_df = spark.createDataFrame(new_rows)
+new_df.show(5)
