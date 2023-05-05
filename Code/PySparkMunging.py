@@ -1,6 +1,6 @@
 import json
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import lit
+from pyspark.sql.functions import  col, lit
 import re
 
 
@@ -69,25 +69,20 @@ df.select("targets").show(5, truncate=False)
 
 jsoned_rdd = json_ready(df)
 
-cols = jsoned_rdd.map(col_name_extractor)      # 2D RDD of the columns per cell
-flat_cols_unique_list = flattner(cols)         # list of unique column names
+cols = jsoned_rdd.map(col_name_extractor)  # 2D RDD of the columns per cell
+flat_cols_unique_list = flattner(cols)     # list of unique column names
 print(flat_cols_unique_list)
 
 # Add the unique columns as empty columns to the Dataframe
 for col_name in flat_cols_unique_list:
     df = df.withColumn(col_name, lit(" "))
 
-
-vals = jsoned_rdd.map(value_extractor)         # 2D RDD of the values per cell
+vals = jsoned_rdd.map(value_extractor)     # 2D RDD of the values per cell
 print(vals.take(5))
 print("\n")
 columns_list = cols.collect()
 values_list = vals.collect()
 
-# print(columns_list)
-# print(values_list)
-
-# Convert the DataFrame to an RDD
 rdd = df.rdd
 
 modified_rdd = rdd
@@ -99,37 +94,3 @@ for item in columns_list:
     for index2, col_name in enumerate(col_group):
         row_index = index2
         print(col_name, row_index, ": ", values_list[column_index][row_index])
-        modified_rdd = rdd.zipWithIndex().map(lambda row: (row.col_name, values_list[column_index][row_index]) if row[0] == row_index else row)
-
-
-        # Convert the modified RDD back to a DataFrame
-updated_df = modified_rdd.toDF()
-
-# Show the result DataFrame
-updated_df.show(truncate=False)
-
-"""
-I don't need to flatten them 
-All I need to do is get the list of unique column names 
-Then Add them all as empty columns to the Dataframe 
-
-
-Once i DO  THAT 
-
-
-
-I need to also get another list of all the column names in a 2d array format, 
-so that every index of that array is actually what every cell holds
-
-
-Once I do that ,
-
-
-
-I get the 2d array of the values 
-so that every index of that array is actually what every cell holds
-
-And then I iterate using both 
-
-Now that I have a 
-"""
