@@ -99,3 +99,14 @@ for item in columns_list:
 # Create a new DataFrame using the new rows
 new_df = spark.createDataFrame(new_rows)
 new_df.show(5)
+
+
+
+new_df = spark.createDataFrame(columns_list, ["column_index", "col_group"])  # Create DataFrame from columns_list
+
+for index, col_name in enumerate(values_list):
+    new_df = new_df.withColumn(str(index), col("col_group")[index])  # Create new columns with values from values_list
+
+new_df = new_df.drop("col_group")  # Drop the original col_group column
+
+new_df.show()  # Display the new DataFrame in wide format
