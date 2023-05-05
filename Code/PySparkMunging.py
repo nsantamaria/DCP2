@@ -1,6 +1,6 @@
 import json
 from pyspark.sql import SparkSession, Row
-from pyspark.sql.functions import  col, when
+from pyspark.sql.functions import  *
 import re
 
 
@@ -87,19 +87,27 @@ rdd = df.rdd
 modified_rdd = rdd
 # TODO: Turn this bit into MAP function
 # Create an empty dataframe
-new_df = spark.createDataFrame([], [])
-
+new_rows = []
 for item in columns_list:
     column_index = item[0]
     col_group = item[1]
     for index2, col_name in enumerate(col_group):
         row_index = index2
         value = values_list[column_index][row_index]
-        # Add a new column to the dataframe with the corresponding value
-        new_df = new_df.withColumn(col_name, when(col("row_index") == row_index, value))
+        new_row = Row(col_name=col_name, value=value)
+        new_rows.append(new_row)
 
-# Drop the row_index column
-new_df = new_df.drop("row_index")
+# Create a new DataFrame using the new rows
+data = spark.createDataFrame(new_rows)
+
+
+df = spark.createDataFrame(data, ["col_name", "value"])
+
+# Add a unique row identifier
+df = df.withColumn("row_id", monotonically_increasing_id())
+
+# Pivot the dataframe to convert it to wide format
+wide_df = df.groupBy("row_id").pivot("col_name").agg(first("value"))
 
 # Show the resulting dataframe
-new_df.show()
+wide_df.show(truncate=False)
