@@ -98,10 +98,8 @@ for item in columns_list:
         new_rows.append(new_row)
 
 # Create a new DataFrame using the new rows
-data = spark.createDataFrame(new_rows)
+df = spark.createDataFrame(new_rows)
 
-
-df = spark.createDataFrame(data, ["col_name", "value"])
 
 # Add a unique row identifier
 df = df.withColumn("row_id", monotonically_increasing_id())
