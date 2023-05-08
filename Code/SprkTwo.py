@@ -81,6 +81,6 @@ def oneRowVal(row):
     return row
 
 
-tester = jsoned_rdd.map(oneRowVal)
+tester = df.map(oneRowVal)
 
 print(tester.take(5))
