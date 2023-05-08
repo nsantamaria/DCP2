@@ -1,6 +1,6 @@
 import json
 from pyspark.sql import SparkSession, Row
-from pyspark.sql.functions import lit, *
+from pyspark.sql.functions import *
 import re
 
 
@@ -69,16 +69,17 @@ df = spark.read.csv(file_path, header=True, inferSchema=True, multiLine=True, se
 jsoned_rdd = json_ready(df)
 
 cols = jsoned_rdd.map(col_name_extractor)  # 2D RDD of the columns per cell
-flat_cols_unique_list = flattner(cols)     # list of unique column names
+flat_cols_unique_list = flattner(cols)  # list of unique column names
 print(flat_cols_unique_list)
 
 # Add the unique columns as empty columns to the Dataframe
 for col_name in flat_cols_unique_list:
     df = df.withColumn(col_name, lit(" "))
 
+
 def oneRowVal(row):
-    row = row.split(',')
     return row[15]
+
 
 tester = jsoned_rdd.map(oneRowVal)
 
