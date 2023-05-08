@@ -76,11 +76,31 @@ print(flat_cols_unique_list)
 for col_name in flat_cols_unique_list:
     df = df.withColumn(col_name, lit(" "))
 
+def new_quoter(row):
+    """
+    Takes a JSON row and will replace the occurrences of double-double quotes ("") with a single double quote (")
+    :param row: A cell from the Targets Column
+    :return: a valid JSON format String
+    """
+    row = row[15]
+    return  re.sub('""', '"', row)
+
 
 def oneRowVal(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "website":
+                result = item["segment"]
+        except:
+            result = " "
+    row[24] = result
     return row
 
 
 tester = df.rdd.map(oneRowVal)
 
 print(tester.take(5))
+
