@@ -78,7 +78,7 @@ for col_name in flat_cols_unique_list:
 
 
 def oneRowVal(row):
-    return row[15]
+    return row
 
 
 tester = jsoned_rdd.map(oneRowVal)
