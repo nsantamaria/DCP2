@@ -81,6 +81,6 @@ def oneRowVal(row):
     return row
 
 
-tester = df.map(oneRowVal)
+tester = df.rdd.map(oneRowVal)
 
 print(tester.take(5))
