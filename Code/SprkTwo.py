@@ -81,3 +81,5 @@ def oneRowVal(row):
     return row[15]
 
 tester = jsoned_rdd.map(oneRowVal)
+
+print(tester.take(5))
