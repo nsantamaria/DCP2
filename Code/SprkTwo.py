@@ -58,7 +58,7 @@ def json_ready(df):
     return rdd3
 
 
-file_path = "/home/fneffati/DataSets/propublica_1000.csv"
+file_path = "/home/fneffati/DataSets/propublica_cleantargets.csv"
 
 spark = SparkSession.builder \
     .master('local[1]') \
@@ -540,6 +540,6 @@ with_Interest = with_Region.map(Interest)
 # print(with_Interest.take(5))
 df = with_Interest.toDF()
 df.show(2, truncate=True)
-df.write.option("header", True).csv("/home/fneffati/DataSets/output/test_output.csv")
+df.write.option("header", True).csv("/home/fneffati/DataSets/output/test_output2")
 
 
