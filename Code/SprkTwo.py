@@ -538,3 +538,7 @@ with_Interest = with_Region.map(Interest)
 
 
 print(with_Interest.take(5))
+df = with_Interest.toDF()
+df.show(truncate=True)
+
+
