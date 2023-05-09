@@ -87,16 +87,16 @@ def new_quoter(row):
     return re.sub('""', '"', row)
 
 
-def extract_target(row, target_name):
+def website(row):
     targets = new_quoter(row)
     targets = json.loads(targets)
-    result = ""
-    for target in targets:
+    result = " "
+    for item in targets:
         try:
-            if target["target"] == target_name:
-                result = target["segment"]
+            if item["target"] == "Website":
+                result = item["segment"]
         except:
-            pass
+            result = " "
     r = row
     updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
                       message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
@@ -107,56 +107,434 @@ def extract_target(row, target_name):
                       targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
                       target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=r.target_City,
                       target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
-                      target_State=r.target_State, target_Retargeting=r.target_Retargeting,
-                      target_Gender=r.target_Gender,
-                      target_Like=r.target_Like, target_List=r.target_List, target_Segment=r.target_Segment)
-    updated_row[target_name] = result
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=r.
+                      target_Gender, target_Like=r.target_Like, target_List=r.target_List, target_Segment=r.
+                      target_Segment, target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      result)
     return updated_row
 
 
-# Example usage: extract target_Interest
-with_Website = df.rdd.map(lambda row: extract_target(row, "Website"))
+with_website = df.rdd.map(website)
 
-# Example usage: extract target_Interest
-with_Agency = with_Website.map(lambda row: extract_target(row, "Agency"))
 
-# Example usage: extract target_Interest
-with_MinAge = with_Agency.map(lambda row: extract_target(row, "MinAge"))
+def agency(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "Agency":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=r.target_City,
+                      target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=r.
+                      target_Gender, target_Like=r.target_Like, target_List=r.target_List, target_Segment=r.
+                      target_Segment, target_MinAge=r.target_MinAge, target_Agency=result, target_Website=
+                      r.target_Website)
+    return updated_row
 
-# Example usage: extract target_Interest
-with_Interest = with_MinAge.map(lambda row: extract_target(row, "Interest"))
 
-# Example usage: extract target_Region
-with_Region = with_Interest.map(lambda row: extract_target(row, "Region"))
+with_Agency = with_website.map(agency)
 
-# Example usage: extract target_City
-with_City = with_Region.map(lambda row: extract_target(row, "City"))
 
-# Example usage: extract target_Language
-with_Language = with_City.map(lambda row: extract_target(row, "Language"))
+def minage(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "MinAge":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=r.target_City,
+                      target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=r.
+                      target_Gender, target_Like=r.target_Like, target_List=r.target_List, target_Segment=r.
+                      target_Segment, target_MinAge=result, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
 
-# Example usage: extract target_MaxAge
-with_MaxAge = with_Language.map(lambda row: extract_target(row, "MaxAge"))
 
-# Example usage: extract target_Age
-with_Age = with_MaxAge.map(lambda row: extract_target(row, "Age"))
+with_MinAge = with_Agency.map(minage)
 
-# Example usage: extract target_State
-with_State = with_Age.map(lambda row: extract_target(row, "State"))
 
-# Example usage: extract target_Retargeting
-with_Retargeting = with_State.map(lambda row: extract_target(row, "Retargeting"))
+def segment(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "segment":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=r.target_City,
+                      target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=r.
+                      target_Gender, target_Like=r.target_Like, target_List=r.target_List, target_Segment=result,
+                      target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
 
-# Example usage: extract target_Gender
-with_Gender = with_Retargeting.map(lambda row: extract_target(row, "Gender"))
 
-# Example usage: extract target_Like
-with_Like = with_Gender.map(lambda row: extract_target(row, "Like"))
+with_segment = with_MinAge.map(segment)
 
-# Example usage: extract target_List
-with_List = with_Like.map(lambda row: extract_target(row, "List"))
 
-# Example usage: extract target_Segment
-with_Segment = with_List.map(lambda row: extract_target(row, "Segment"))
+def t_list(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "List":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=r.target_City,
+                      target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=r.
+                      target_Gender, target_Like=r.target_Like, target_List=result, target_Segment=
+                      r.target_Segment, target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
 
-print(with_Segment.take(5))
+
+with_list = with_segment.map(t_list)
+
+
+def Like(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "Like":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=r.target_City,
+                      target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=r.
+                      target_Gender, target_Like=result, target_List=r.target_List, target_Segment=
+                      r.target_Segment, target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
+
+
+with_Like = with_list.map(Like)
+
+
+def Gender(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "Gender":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=r.target_City,
+                      target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=result,
+                      target_Like=r.target_Like, target_List=r.target_List, target_Segment=
+                      r.target_Segment, target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
+
+
+with_Gender = with_Like.map(Gender)
+
+
+def Retargeting(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "Retargeting":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=r.target_City,
+                      target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
+                      target_State=r.target_State, target_Retargeting=result, target_Gender=r.target_Gender,
+                      target_Like=r.target_Like, target_List=r.target_List, target_Segment=
+                      r.target_Segment, target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
+
+
+with_Retargeting = with_Gender.map(Retargeting)
+
+
+
+def state(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "State":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=r.target_City,
+                      target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
+                      target_State=result, target_Retargeting=r.target_Retargeting, target_Gender=r.target_Gender,
+                      target_Like=r.target_Like, target_List=r.target_List, target_Segment=
+                      r.target_Segment, target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
+
+
+with_state = with_Retargeting.map(state)
+
+
+def age(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "Age":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=r.target_City,
+                      target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=result,
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=r.target_Gender,
+                      target_Like=r.target_Like, target_List=r.target_List, target_Segment=
+                      r.target_Segment, target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
+
+
+with_age = with_state.map(age)
+
+
+def MaxAge(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "MaxAge":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=r.target_City,
+                      target_Language=r.target_Language, target_MaxAge=result, target_Age=r.target_Age,
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=r.target_Gender,
+                      target_Like=r.target_Like, target_List=r.target_List, target_Segment=
+                      r.target_Segment, target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
+
+
+with_MaxAge = with_age.map(MaxAge)
+
+def Language(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "Language":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=r.target_City,
+                      target_Language=result, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=r.target_Gender,
+                      target_Like=r.target_Like, target_List=r.target_List, target_Segment=
+                      r.target_Segment, target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
+
+
+with_Language = with_MaxAge.map(Language)
+
+
+def City(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "City":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=r.target_Region, target_City=result,
+                      target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=r.target_Gender,
+                      target_Like=r.target_Like, target_List=r.target_List, target_Segment=
+                      r.target_Segment, target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
+
+
+with_City = with_Language.map(City)
+
+
+def Region(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "Region":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=r.target_Interest, target_Region=result, target_City=r.target_City,
+                      target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=r.target_Gender,
+                      target_Like=r.target_Like, target_List=r.target_List, target_Segment=
+                      r.target_Segment, target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
+
+
+with_Region = with_City.map(Region)
+
+
+def Interest(row):
+    targets = new_quoter(row)
+    targets = json.loads(targets)
+    result = " "
+    for item in targets:
+        try:
+            if item["target"] == "Interest":
+                result = item["segment"]
+        except:
+            result = " "
+    r = row
+    updated_row = Row(id=r.id, html=r.html, political=r.political, not_political=r.not_political, title=r.title,
+                      message=r.message, thumbnail=r.thumbnail, created_at=r.created_at, updated_at=r.updated_at,
+                      lang=r.lang, images=r.images, impressions=r.impressions,
+                      political_probability=r.political_probability, targeting=r.targeting, suppressed=r.suppressed,
+                      targets=r.targets, advertiser=r.advertiser, entities=r.entities, page=r.page,
+                      lower_page=r.lower_page, targetings=r.targetings, paid_for_by=r.paid_for_by,
+                      targetedness=r.targetedness, listbuilding_fundraising_proba=r.listbuilding_fundraising_proba,
+                      target_Interest=result, target_Region=r.target_Region, target_City=r.target_City,
+                      target_Language=r.target_Language, target_MaxAge=r.target_MaxAge, target_Age=r.target_Age,
+                      target_State=r.target_State, target_Retargeting=r.target_Retargeting, target_Gender=
+                      r.target_Gender, target_Like=r.target_Like, target_List=r.target_List, target_Segment=
+                      r.target_Segment, target_MinAge=r.target_MinAge, target_Agency=r.target_Agency, target_Website=
+                      r.target_Website)
+    return updated_row
+
+
+with_Interest = with_Region.map(Interest)
+
+
+print(with_Interest.take(5))
