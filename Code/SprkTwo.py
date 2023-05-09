@@ -88,7 +88,8 @@ def new_quoter(row):
 
 
 def extract_target(row, target_name):
-    targets = json.loads(row.targets)
+    targets = new_quoter(row)
+    targets = json.loads(targets)
     result = ""
     for target in targets:
         try:
