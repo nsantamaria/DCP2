@@ -537,8 +537,9 @@ def Interest(row):
 with_Interest = with_Region.map(Interest)
 
 
-print(with_Interest.take(5))
+# print(with_Interest.take(5))
 df = with_Interest.toDF()
-df.show(truncate=True)
+df.show(2, truncate=True)
+df.write.option("header", True).csv("/home/fneffati/DataSets/output/")
 
 
