@@ -1,0 +1,558 @@
+---
+title: "Project 2"
+author: "Paul Hwang"
+date: "2023-04-17"
+output: html_document
+---
+
+
+```{r}
+library(data.table)
+library(dplyr)
+library(DataExplorer)
+```
+
+
+## Load Data Publica
+
+    id: post id number on facebook
+    html: HTML of the ad as collected by the Political Ad Collector
+    political: number of Political Ad Collector users who have voted that the ad is political
+    not_political: number of Political Ad Collector users who have voted that the ad is not political
+    title: ad title
+    message: ad content
+    thumbnail: link for a thumbnail of the profile image (of the advertiser)
+    created_at: date ad was first collected by the Political Ad Collector
+    updated_at: the most recent time that it got an impression OR the most recent time it was voted on
+    lang: language of the ad. always en-US.
+    images: link for images included in the ad
+    impressions: number of times the ad has been seen by the Political Ad Collector
+    political_probability: calculated by the classifier. data only includes ads with a probability >=0.7
+    targeting: Facebook’s “Why am I seeing this?” disclosure provided to Political Ad Collector users
+    suppressed: value is false. suppressed ads are excluded from this data set because they were misclassified.
+    targets: a parsed version of targeting
+    advertiser: the account that posted the ad
+    entities: named entities mentioned in the ad, extracted using software
+    page: the page that posted the ad
+    lower_page: the Facebook URL of the advertiser that posted the ad (the “page” column, lowercased)
+    targetings: an array of one or more of Facebook’s “Why am I seeing this?” disclosures provided to Political Ad Collector users
+    paid_for_by: for political ads, the entity listed in Facebook’s required disclosure as having paid for the ad
+    targetedness: an internal metric for estimating how granularly an ad is targeted, used for sorting in the ProPublica search interface
+
+```{r}
+publica <- fread("/Users/paulhwang/Desktop/Distributed Computing/Project 2/Data/fbpac-ads-en-US.csv")
+```
+
+### Observe data
+
+```{r}
+names(publica)
+
+max(publica$created_at)
+min(publica$created_at)
+```
+
+Created_at is defined by: date ad was first collected by the Political Ad Collector
+Updated_at is defined by: the most recent time that it got an impression OR the most recent time it was voted on
+
+```{r}
+publica %>% filter(created_at != updated_at) %>% select(created_at, updated_at)
+```
+
+political means: number of Political Ad Collector users who have voted that the ad is political
+not_political means: number of Political Ad Collector users who have voted that the ad is not political
+
+```{r}
+publica %>% select(political) %>% count(political)
+publica %>% select(not_political) %>% count(not_political)
+```
+
+
+```{r}
+boxplot(publica$political)
+hist(publica$political)
+summary(publica$political)
+
+boxplot(publica$not_political)
+hist(publica$not_political)
+summary(publica$not_political)
+```
+
+
+impression means: number of times the ad has been seen by the Political Ad Collector
+
+
+```{r}
+summary(publica$impressions)
+boxplot(publica$impressions)
+hist(publica$impressions)
+
+```
+
+
+political_probability means: calculated by the classifier. data only includes ads with a probability >=0.7
+
+```{r}
+summary(publica$political_probability)
+boxplot(publica$political_probability)
+hist(publica$political_probability)
+
+publica %>% summarize(political_probability)
+```
+
+
+targeting: Facebook’s “Why am I seeing this?” disclosure provided to Political Ad Collector users
+
+```{r}
+publica %>% summarize(targeting)
+
+publica[4,14]
+```
+
+
+targets: a parsed version of targeting
+
+target has couple factors we need to decipher:
+1. age which has two format, x and older and x to y. Need to put the formats in similar version. Can use dplyr to cut based on "and" and "to"
+2. location: it has different formats like "region" which seem to refer to general location (can take many things like country, state, etc), "state" which refers to the state, "city" which refers to city
+3. "Segment" and etc: takes in different sets of values like preference for the subject. ie: "NPR", "US politics (very liberal)", "Politics and social issues"
+
+#### targets
+
+```{r}
+publica %>% summarize(targets)
+publica %>% select(targets) %>% count(targets)
+
+target_obs <- publica %>% select(targets) %>% count(targets)
+target_obs
+
+publica[4,16] 
+```
+
+```{r}
+length(publica$targets)
+
+sum(publica$targets == "[]")
+
+sum(publica$targets == "[]")/length(publica$targets)
+
+sum(publica$targets == "")
+
+sum(publica$targets == "")/length(publica$targets)
+```
+
+
+advertiser: the account that posted the ad
+
+```{r}
+publica %>% summarize(advertiser)
+```
+
+
+entities: named entities mentioned in the ad, extracted using software
+general info on the person and such
+
+```{r}
+publica %>% summarize(entities)
+```
+
+paid_for_by: for political ads, the entity listed in Facebook’s required disclosure as having paid for the ad 
+
+```{r}
+publica %>% select(paid_for_by) %>% count(paid_for_by)
+```
+
+targetedness: an internal metric for estimating how granularly an ad is targeted, used for sorting in the ProPublica search interface
+
+```{r}
+publica %>% select(targetedness) %>% count(targetedness)
+
+summary(publica$targetedness)
+hist(publica$targetedness)
+boxplot(publica$targetedness)
+```
+
+```{r}
+publica %>% select(listbuilding_fundraising_proba) %>% count(listbuilding_fundraising_proba)
+
+summary(publica$listbuilding_fundraising_proba)
+hist(publica$listbuilding_fundraising_proba)
+boxplot(publica$listbuilding_fundraising_proba)
+```
+
+
+### DataExplorer
+
+```{r}
+introduce(publica)
+plot_intro(publica)
+plot_missing(publica)
+```
+
+```{r}
+plot_bar(publica)
+plot_histogram(publica)
+```
+```{r}
+plot_qq(publica)
+```
+
+```{r}
+plot_correlation(publica)
+plot_correlation(na.omit(publica), maxcat = 5L)
+```
+
+## Load Data Advertise
+```{r}
+mono <- fread("/Users/paulhwang/Desktop/Distributed Computing/Project 2/Data/fb_monolith.csv")
+```
+
+
+Ad_id. Unique ID generated by Meta for this ad. (There may be multiple duplicate ads with the same content, but different ids.)
+Page_name. Page name of the entity which published the ad.
+Political_value. A number ranging from 0-1, populated by C4D’s political classification model. Ads that Meta indicates are political (because they have disclosures) have a value of -1, as C4D’s political classifier did not run on these ads.
+Paid_for_by. Name of the entity listed in the ad disclosure. This field will be empty if the ad does not have a disclosure (that is, it’s not a declared political ad).
+Ad_text. Text content of the ad.
+Observed_at. Date/time when ad was observed.
+Call_to_action. Text on button in ad, if there is one. (This might be donate, subscribe, etc.)
+Targetings. Jsn object containing all of the targeting information collected for this ad. A description of the specific fields in this json object are shown below.
+
+
+### Observe Data
+
+```{r}
+names(mono)
+```
+
+page_name
+
+```{r}
+mono %>% select(page_name) %>% count(page_name)
+```
+
+political_values: generally -1, but other values with min of 0.8
+
+```{r}
+mono %>% select(political_value) %>% count(political_value)
+
+mono_political <- as.numeric(mono$political_value)
+summary(mono_political)
+boxplot(mono_political)
+hist(mono_political)
+```
+
+paid_for_by: who paid to get the ad up
+
+```{r}
+mono %>% select(paid_for_by) %>% count(paid_for_by)
+```
+
+observed_at: Date/time when ad was observed.
+
+```{r}
+mono %>% select(observed_at) %>% count(observed_at)
+```
+
+Call_to_action. Text on button in ad, if there is one. (This might be donate, subscribe, etc.)
+
+```{r}
+mono %>% select(call_to_action) %>% count(call_to_action)
+```
+
+
+
+Targetings: Jsn object containing all of the targeting information collected for this ad. A description of the specific fields in this json object are shown below.
+
+```{r}
+mono %>% select(targetings) %>% count(targetings)
+
+mono_targets <- mono %>% select(targetings)
+```
+
+
+### DateExplorer
+
+```{r}
+introduce(mono)
+plot_intro(mono)
+plot_missing(mono)
+```
+
+```{r}
+str(mono)
+```
+
+
+## subset targets
+
+
+```{r}
+publica2 <- publica %>% filter(targets != "[]")
+publica3 <- publica2 %>% filter(targets != "")
+
+setwd("/Users/paulhwang/Desktop/Distributed Computing/Project 2/Data/")
+fwrite(publica3, "propublica_cleantargets.csv")
+```
+
+```{r}
+publica4 <- publica3 %>% sample_n(1000)
+```
+
+```{r}
+fwrite(publica4, "propublica_1000.csv")
+```
+
+
+```{r}
+test_pub <- fread("/Users/paulhwang/Desktop/Distributed Computing/Project 2/Data/propublica_cleantargets.csv")
+```
+
+
+
+
+```{r}
+dim(test_pub)
+```
+
+```{r}
+publica4 %>% select(targets) %>% count(targets)
+```
+
+
+```{r}
+pro1000$message
+```
+
+## checking sentiment analysis
+
+```{r}
+tar_on <- fread("/Users/paulhwang/Desktop/Distributed Computing/Project 2/Data/propublica_sent.csv")
+```
+
+```{r}
+hist(tar_on$avg_word_length)
+hist(tar_on$word_count)
+hist(tar_on$sentiment_score)
+```
+
+
+## Merging targets back propublica
+
+```{r}
+targets <- fread("/Users/paulhwang/Desktop/Distributed Computing/Project 2/Data/full_data_with_targets.csv")
+```
+```{r}
+targets_test <- targets %>% select(id, target_Interest, target_Region, 
+                                   target_City, target_Language, target_MaxAge, 
+                                   target_Age, target_State, target_Retargeting, 
+                                   target_Gender, target_Like, target_List, 
+                                   target_Segment, target_MinAge, target_Agency, 
+                                   target_Website)
+```
+
+
+```{r}
+publica_merge <- left_join(tar_on, targets_test, by = "id")
+```
+
+```{r}
+propublica_final <- publica_merge %>% 
+  select(-html, -thumbnail, -images, -targeting, -suppressed, -targets, -page, 
+         -lower_page, -targetings, -words)
+```
+
+```{r}
+setwd("/Users/paulhwang/Desktop/Distributed Computing/Project 2/Data/")
+fwrite(propublica_final, "propublica_final.csv")
+```
+
+
+```{r}
+test = fread("/Users/paulhwang/Desktop/Distributed Computing/Project 2/Data/merged_data.csv")
+```
+
+
+
+
+## Data Viz Publica
+
+```{r}
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(zoo)
+library(lubridate)
+```
+
+
+
+
+```{r}
+publica_final <- fread("/Users/paulhwang/Desktop/Distributed Computing/Project 2/Data/propublica_final.csv")
+```
+
+```{r}
+publica_fin <- publica_final %>% mutate(date = as.Date(created_at), 
+                         year = format(date, format = "%Y"), 
+                         month = format(date, format = "%m"),
+                         day = format(date, format = "%d"))
+
+publica_fin
+```
+
+### Simple looks
+
+```{r}
+publica_fin %>% select(year, target_Gender) %>% count(target_Gender) ## yes
+publica_fin %>% select(year, target_Age) %>% count(target_Age) ## not
+publica_fin %>% select(year, target_MinAge) %>% count(target_MinAge) ## yes
+publica_fin %>% select(year, target_MaxAge) %>% count(target_MaxAge) ## yes
+publica_fin %>% select(year, target_Interest) %>% count(target_Interest) ## not
+publica_fin %>% select(year, target_Region) %>% count(target_Region) ## sure...
+publica_fin %>% select(year, target_State) %>% count(target_State) ## proof of crap
+publica_fin %>% select(year, target_Language) %>% count(target_Language) ## enough
+publica_fin %>% select(year, target_Retargeting) %>% count(target_Retargeting) ## sure
+publica_fin %>% select(year, target_Agency) %>% count(target_Agency) ##no idea what this means
+publica_fin %>% select(year, target_Website) %>% count(target_Website) ## useless
+
+## completely empty
+publica_fin %>% select(year, target_Like) %>% count(target_Like)
+publica_fin %>% select(year, target_List) %>% count(target_List)
+publica_fin %>% select(year, target_Segment) %>% count(target_Segment)
+```
+
+### breaking based on years
+
+
+#### Gender
+```{r}
+df_gender <- publica_fin %>% select(year, target_Gender) %>% group_by(year) %>% 
+  count(target_Gender) %>% mutate(prop = n/sum(n))
+
+df_gender
+
+ggplot(df_gender, aes(x = year, y = prop, fill = target_Gender)) + 
+  geom_bar(stat = "identity", position = position_dodge()) + theme_classic() +
+  labs(title = "Gender Targetting for Ads", x = "Year", y="Proportion") +
+  coord_cartesian(ylim = c(0, 1.1), expand =FALSE)
+
+df_gender_na <- publica_fin %>% select(year, target_Gender) %>% 
+  filter(target_Gender != "") %>% group_by(year) %>% 
+  count(target_Gender) %>% mutate(prop = n/sum(n))
+df_gender_na
+
+
+ggplot(df_gender_na, aes(x = year, y = prop, fill = target_Gender)) + 
+  geom_bar(stat = "identity", position = position_dodge()) + theme_classic() +
+  labs(title = "Gender Targetting for Ads", x = "Year", y="Proportion") +
+  coord_cartesian(ylim = c(0, 0.9), expand =FALSE)
+```
+
+#### Age
+
+```{r}
+## overall -- doomsday
+
+df_age <- publica_fin %>% select(date, target_MinAge, target_MaxAge)
+df_age
+
+ggplot(df_age, aes(x=date, y=target_MinAge)) + geom_line() + 
+  scale_x_date(date_breaks = "1 month") + theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = -0.01))
+
+## per day split
+
+df_age_mean <- df_age %>% group_by(date) %>%
+  summarize(mean_Min = mean(target_MinAge, na.rm = TRUE), 
+            mean_Max = mean(target_MaxAge, na.rm = TRUE))
+
+df_age_mean
+
+
+ggplot(df_age_mean, aes(x = date, y = mean_Min)) +
+  geom_line(aes(col = "Min Age")) +
+  geom_line(aes(x = date, y = mean_Max, col = "Max Age")) +
+  scale_x_date(date_breaks = "1 month") +
+  scale_color_manual(values = c("blue", "red"), 
+                     labels = c("Max Age", "Min Age")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title = "Target Age Range", x = "", y = "Age")
+```
+
+```{r}
+merged_data$year_month <- paste(merged_data$year, month(merged_data$date), sep = "-")
+merged_data$year_month <- ifelse(is.na(merged_data$date), NA, merged_data$year_month)
+merged_data$year_month <- ifelse(nchar(merged_data$year_month) == 6, 
+                                 paste0(merged_data$year, "-0",  month(merged_data$date)),
+                                 merged_data$year_month)
+
+
+df_ym <- publica_fin %>% select(date, year, month, target_MinAge, target_MaxAge)
+
+df_ym <- publica_fin %>% 
+  select(date, year, month, target_MinAge, target_MaxAge) %>%
+  mutate(ym = paste(year, month, sep = "-")) %>%
+  mutate(ym = ifelse(is.na(date), NA, ym)) %>%
+  mutate(ym = as.Date(paste0(ym, "-01")))
+
+df_ageym_mean <- df_ym %>% group_by(ym) %>%
+  summarize(mean_Min = mean(target_MinAge, na.rm = TRUE), 
+            mean_Max = mean(target_MaxAge, na.rm = TRUE))
+
+df_ageym_mean
+
+
+ggplot(df_ageym_mean, aes(x = ym, y = mean_Min)) +
+  geom_line(aes(col = "Min Age")) +
+  geom_line(aes(x = ym, y = mean_Max, col = "Max Age")) +
+  scale_x_date(date_breaks = "1 month") +
+  scale_color_manual(values = c("blue", "red"), 
+                     labels = c("Max Age", "Min Age")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title = "Target Age Range, Averaged by Month", x = "", y = "Age")
+```
+
+
+
+
+#### Interest
+
+```{r}
+publica_fin %>% select(year, target_Interest) %>% count(target_Interest) %>% 
+  mutate(prop = round(n/sum(n), digits = 3)) %>% filter(n > 400)
+```
+
+#### region
+
+```{r}
+publica_fin %>% select(year, target_Region) %>% count(target_Region) %>% 
+  mutate(prop = round(n/sum(n), digits = 3)) %>% filter(n > 300)
+```
+
+#### state
+
+```{r}
+publica_fin %>% select(year, target_State) %>% count(target_State) %>% 
+  mutate(prop = round(n/sum(n), digits = 3)) %>% filter(n > 100)
+```
+
+#### language
+
+
+```{r}
+publica_fin %>% select(year, target_Language) %>% count(target_Language) ## enough
+publica_fin %>% select(year, target_Retargeting) %>% count(target_Retargeting) ## sure
+publica_fin %>% select(year, target_Agency) %>% count(target_Agency) ##no idea what this means
+publica_fin %>% select(year, target_Website) %>% count(target_Website) ## useless
+```
+
+
+
+
+
+
+
+
+
