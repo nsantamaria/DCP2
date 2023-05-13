@@ -18,6 +18,7 @@ Baab is hoping that you will find something interesting to help him convince his
 
 *Aaron Spielman*
 - Sentiment analysis of advertisements (Python)
+- Word frequency analysis of advertisements (Python)
 - Analysis of top advertisers (Python, R)
 - Presentation Slides
 
