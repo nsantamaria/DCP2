@@ -1,0 +1,85 @@
+---
+title: "Ad Frequency"
+author: "Joshua D. Ingram"
+date: "2023-05-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(tidyverse)
+library(lubridate)
+ads <- read_csv("/Users/joshuaingram/Downloads/merged_data.csv")
+```
+
+# Most Prolific Advertisers (All-Time)
+
+```{r}
+head(ads)
+summary(ads)
+
+ads$date <- as.Date(ads$created_at)
+
+advertiser_counts <- ads %>% group_by(advertiser) %>% count(sort = TRUE)
+
+paid_for_counts <- ads %>% group_by(paid_for_by) %>% count(sort = TRUE)
+```
+
+# Post Frequencies Over Time
+
+```{r}
+ads$week_num <- week(ads$date)
+ads$month_num <- month(ads$date)
+ads$year_num <- year(ads$date)
+
+ad_frequency_yearly <- ads %>% select(advertiser, date, week_num, month_num, year_num)
+ad_frequency_yearly <- ad_frequency_yearly %>% group_by(year_num) %>% count()
+ad_frequency_yearly <- ad_frequency_yearly[-nrow(ad_frequency_yearly),]
+```
+
+```{r}
+ggplot(data = ad_frequency_yearly, aes(x = year_num, y = n)) + geom_point()
+```
+
+```{r}
+ad_frequency_monthly <- ads %>% select(advertiser, date, week_num, month_num, year_num)
+ad_frequency_monthly <- ad_frequency_monthly %>% group_by(year_num, month_num) %>% count()
+ad_frequency_monthly <- ad_frequency_monthly[-nrow(ad_frequency_monthly),]
+ad_frequency_monthly$month <- month.abb[ad_frequency_monthly$month_num]
+```
+
+```{r}
+ggplot(data = ad_frequency_monthly, aes(x = month, y = n)) + 
+  geom_point() + 
+  facet_wrap(~year_num) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+```
+
+```{r}
+ad_frequency_weekly <- ads %>% select(advertiser, date, week_num, month_num, year_num)
+ad_frequency_weekly <- ad_frequency_weekly %>% group_by(year_num, week_num) %>% count()
+ad_frequency_weekly <- ad_frequency_weekly[-nrow(ad_frequency_weekly),]
+```
+
+```{r}
+ggplot(data = ad_frequency_weekly, aes(x = week_num, y = n)) + geom_point() + facet_wrap(~year_num)
+```
+
+
+# Post Frequencies By Advertister Over Time
+
+```{r}
+ad_frequency <- ads %>% select(advertiser, date, week_num, month_num, year_num)
+ad_frequency <- ad_frequency %>% group_by(advertiser, year_num) %>% count(sort = TRUE)
+
+ad_frequency <- ads %>% select(advertiser, date, week_num, month_num, year_num)
+ad_frequency <- ad_frequency %>% group_by(advertiser, year_num, month_num) %>% count(sort = TRUE)
+```
+
+```{r}
+ggplot(data = ad_frequency[which(ad_frequency$advertiser == "Donald J. Trump"),], aes(x = month_num, y = n, color = advertiser)) + geom_point() + facet_wrap(~year_num)
+```
+
+
