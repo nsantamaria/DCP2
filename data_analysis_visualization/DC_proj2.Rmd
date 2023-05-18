@@ -1,0 +1,837 @@
+---
+title: "DIstributed Computing Project 2"
+author: "Aaron Spielman"
+date: "2023-04-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(knitr)
+library(data.table)
+library(DataExplorer)
+library(lubridate)
+library(stringr)
+library(wordcloud)
+library(RColorBrewer)
+
+```
+
+## Merging Datasets
+
+```{r warning = F, message = F}
+adObserver <- fread("C:/Users/aaron/Downloads/fb_monolith.csv")
+ProPublica <- read.csv(file="C:/Users/aaron/Downloads/fbpac-ads-en-US.csv")
+
+adObserver$ad_text <- as.character(adObserver$ad_text)
+ProPublica$message <- as.character(ProPublica$message)
+
+adObserver <- subset(adObserver, select = -V9)
+adObserver <- subset(adObserver, select = -call_to_action)
+ProPublica <- subset(ProPublica, select = -suppressed)
+ProPublica <- subset(ProPublica, select = -advertiser)
+
+
+ProPublica[ProPublica == "" | ProPublica == " "] <- NA
+adObserver$paid_for_by[adObserver$paid_for_by == "" | adObserver$paid_for_by == " "] <- NA
+```
+
+
+```{r message = F, warning = F}
+
+# rename columns 
+adObserver <- adObserver %>% rename(id = ad_id, advertiser = page_name, political_probability = political_value, created_at = observed_at, targeting = targetings, message = ad_text, updated_at = V10)
+
+ProPublica <- ProPublica %>% rename(advertiser = title)
+
+adObserver$targeting <- as.character(adObserver$targeting)
+ProPublica$targeting <- as.character(ProPublica$targeting)
+
+adObserver$created_at <- as.POSIXct(adObserver$created_at, format="%Y-%m-%d %H:%M:%S")
+ProPublica$created_at <- as.POSIXct(substr(ProPublica$created_at, 1, 19), format="%Y-%m-%d %H:%M:%S")
+
+adObserver$updated_at <- as.POSIXct(adObserver$updated_at, format="%Y-%m-%d %H:%M:%S")
+ProPublica$updated_at <- as.POSIXct(substr(ProPublica$updated_at, 1, 19), format="%Y-%m-%d %H:%M:%S")
+
+# add column to each dataset indicating the dataset source
+adObserver$source <- "adObserver"
+ProPublica$source <- "ProPublica"
+
+# merge datasets
+merged_data <- rbind(adObserver, ProPublica, fill = T)
+
+#write.csv(merged_data, "C:/Users/aaron/Downloads/merged_data.csv", row.names = FALSE)
+
+
+```
+
+
+## Failed timeseries attempt with advertisers
+
+```{r message = F, warning = F}
+
+merged_data$date <- as.Date(floor_date(merged_data$created_at, unit = "days"))
+merged_data <- subset(merged_data, !is.na(advertiser) & advertiser != "")
+
+ads_by_advertiser_and_date <- merged_data %>%
+  group_by(advertiser, date) %>%
+  summarise(count = n()) %>%
+  arrange(-count)
+
+top_advertisers_by_date <- ads_by_advertiser_and_date %>%
+  ungroup() %>%
+  group_by(advertiser) %>%
+  summarise(
+    n_days = n(),
+    n_ads = sum(count, na.rm = T),
+    ads_per_day = n_ads/n_days
+  ) %>%
+  ungroup() %>%
+  top_n(10, n_ads)
+
+top_ad_over_time <- ads_by_advertiser_and_date %>%
+  filter(advertiser %in% top_advertisers_by_date$advertiser)
+
+ggplot(top_ad_over_time, aes(x = date, y = count, group = advertiser, color = advertiser)) +
+  geom_line(size = 1) +
+  labs(title = "Top Advertisers Over Time",
+       x = "Date",
+       y = "Number of Ads") +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+
+```
+
+
+## Top 5 advertisers by year
+
+```{r warning = F, message = F}
+
+library(cowplot)
+
+merged_data$date <- as.Date(floor_date(merged_data$created_at, unit = "days"))
+merged_data$year <- year(merged_data$date)
+
+merged_data <- subset(merged_data, !is.na(advertiser) & advertiser != "")
+
+ads_by_advertiser_and_date <- merged_data %>%
+  group_by(advertiser, date, year) %>%
+  summarise(count = n()) %>%
+  arrange(-count)
+
+top_advertisers_by_year <- ads_by_advertiser_and_date %>%
+  ungroup() %>%
+  group_by(advertiser, year) %>%
+  summarise(
+    n_days = n(),
+    n_ads = sum(count, na.rm = T)
+  ) %>%
+  ungroup() %>%
+  arrange(year, desc(n_ads)) %>%
+  group_by(year) %>%
+  top_n(5, n_ads)
+
+top_ad_over_time <- ads_by_advertiser_and_date %>%
+  filter(advertiser %in% top_advertisers_by_year$advertiser)
+
+data_grouped <- top_ad_over_time %>%
+  group_by(advertiser, year) %>%
+  summarise(total_count = sum(count, na.rm = T)) %>%
+  ungroup()
+
+top_2017_advertisers <- data_grouped %>%
+  filter(year == 2017) %>%
+  arrange(desc(total_count)) %>%
+  head(5)
+
+year_2017 <- ggplot(top_2017_advertisers, aes(x = advertiser, y = total_count, fill = advertiser)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Top 5 Advertisers in 2017",
+       x = "Advertiser",
+       y = "Number of Ads") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = -45, hjust = 0))
+
+
+top_2018_advertisers <- data_grouped %>%
+  filter(year == 2018) %>%
+  arrange(desc(total_count)) %>%
+  head(5)
+
+year_2018 <- ggplot(top_2018_advertisers, aes(x = advertiser, y = total_count, fill = advertiser)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Top 5 Advertisers in 2018",
+       x = "Advertiser",
+       y = "Number of Ads") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = -45, hjust = 0))
+
+
+top_2019_advertisers <- data_grouped %>%
+  filter(year == 2019) %>%
+  arrange(desc(total_count)) %>%
+  head(5)
+
+year_2019 <- ggplot(top_2019_advertisers, aes(x = advertiser, y = total_count, fill = advertiser)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Top 5 Advertisers in 2019",
+       x = "Advertiser",
+       y = "Number of Ads") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = -45, hjust = 0))
+
+
+top_2020_advertisers <- data_grouped %>%
+  filter(year == 2020) %>%
+  arrange(desc(total_count)) %>%
+  head(5)
+
+year_2020 <- ggplot(top_2020_advertisers, aes(x = advertiser, y = total_count, fill = advertiser)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Top 5 Advertisers in 2020",
+       x = "Advertiser",
+       y = "Number of Ads") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = -45, hjust = 0))
+
+
+top_2021_advertisers <- data_grouped %>%
+  filter(year == 2021) %>%
+  arrange(desc(total_count)) %>%
+  head(5)
+
+year_2021 <- ggplot(top_2021_advertisers, aes(x = advertiser, y = total_count, fill = advertiser)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Top 5 Advertisers in 2021",
+       x = "Advertiser",
+       y = "Number of Ads") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = -45, hjust = 0))
+
+top_2022_advertisers <- data_grouped %>%
+  filter(year == 2022) %>%
+  arrange(desc(total_count)) %>%
+  head(5)
+
+year_2022 <- ggplot(top_2022_advertisers, aes(x = advertiser, y = total_count, fill = advertiser)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Top 5 Advertisers in 2022",
+       x = "Advertiser",
+       y = "Number of Ads") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = -45, hjust = 0))
+
+
+plot_grid(year_2017, year_2018, year_2019, year_2020, year_2021, year_2022)
+
+```
+
+
+## Table of top advertisers
+
+```{r}
+
+top_2017_advertisers <- top_2017_advertisers %>% 
+  select(advertiser, total_count, year, everything())
+
+top_2017_advertisers <- top_2017_advertisers %>%
+  rename(
+    Advertiser = advertiser,
+    `Count` = total_count,
+    Year = year
+  )
+
+kable(top_2017_advertisers) %>%
+  kable_styling("striped", full_width = F)
+
+
+top_2018_advertisers <- top_2018_advertisers %>% 
+  select(advertiser, total_count, year, everything())
+
+top_2018_advertisers <- top_2018_advertisers %>%
+  rename(
+    Advertiser = advertiser,
+    `Count` = total_count,
+    Year = year
+  )
+
+kable(top_2018_advertisers) %>%
+  kable_styling("striped", full_width = F)
+
+
+
+top_2019_advertisers <- top_2019_advertisers %>% 
+  select(advertiser, total_count, year, everything())
+
+top_2019_advertisers <- top_2019_advertisers %>%
+  rename(
+    Advertiser = advertiser,
+    `Count` = total_count,
+    Year = year
+  )
+
+kable(top_2019_advertisers) %>%
+  kable_styling("striped", full_width = F)
+
+
+
+
+top_2020_advertisers <- top_2020_advertisers %>% 
+  select(advertiser, total_count, year, everything())
+
+top_2020_advertisers <- top_2020_advertisers %>%
+  rename(
+    Advertiser = advertiser,
+    `Count` = total_count,
+    Year = year
+  )
+
+kable(top_2020_advertisers) %>%
+  kable_styling("striped", full_width = F)
+
+
+
+
+top_2021_advertisers <- top_2021_advertisers %>% 
+  select(advertiser, total_count, year, everything())
+
+top_2021_advertisers <- top_2021_advertisers %>%
+  rename(
+    Advertiser = advertiser,
+    `Count` = total_count,
+    Year = year
+  )
+
+kable(top_2021_advertisers) %>%
+  kable_styling("striped", full_width = F)
+
+
+
+
+top_2022_advertisers <- top_2022_advertisers %>% 
+  select(advertiser, total_count, year, everything())
+
+top_2022_advertisers <- top_2022_advertisers %>%
+  rename(
+    Advertiser = advertiser,
+    `Count` = total_count,
+    Year = year
+  )
+
+kable(top_2022_advertisers) %>%
+  kable_styling("striped", full_width = F)
+
+
+```
+
+
+
+## Adding a year_month column for visuals
+
+```{r}
+
+merged_data$year_month <- paste(merged_data$year, month(merged_data$date), sep = "-")
+merged_data$year_month <- ifelse(is.na(merged_data$date), NA, merged_data$year_month)
+merged_data$year_month <- ifelse(nchar(merged_data$year_month) == 6, 
+                                 paste0(merged_data$year, "-0",  month(merged_data$date)),
+                                 merged_data$year_month)
+
+```
+
+
+
+## Create smaller dataframes to use in spark
+
+```{r message = F, warning = F}
+
+message_data_with_year <- merged_data[, c("message", "year_month")]
+
+message_data_with_year$message <- gsub("<.*?>", "", message_data_with_year$message)
+
+message_data_with_year$message <- gsub("[^[:alpha:][:space:]]", "", message_data_with_year$message)
+
+message_data_with_year$message <- str_replace_all(message_data_with_year$message, "\\b[a-zA-Z]{1,2}\\b", "")
+
+# removing some strange words that appeared in the most frequent words
+message_data_with_year$message <- gsub("classmfrspan", "", message_data_with_year$message)
+message_data_with_year$message <- gsub("classcl", "", message_data_with_year$message)
+message_data_with_year$message <- gsub("afzspanspan", "", message_data_with_year$message)
+message_data_with_year$message <- gsub("classafxspan", "", message_data_with_year$message)
+message_data_with_year$message <- gsub("classcnspan", "", message_data_with_year$message)
+message_data_with_year$message <- gsub("pthe", "", message_data_with_year$message)
+message_data_with_year$message <- gsub("htz", "", message_data_with_year$message)
+message_data_with_year$message <- gsub("datahovercardhttp...", "", message_data_with_year$message)
+message_data_with_year$message <- gsub("classimg", "", message_data_with_year$message)
+message_data_with_year$message <- gsub("dont", "", message_data_with_year$message)
+
+```
+
+
+## Plotting number of ads by year
+
+```{r}
+
+message_data_with_year <- merged_data[, c("message", "year", "source")]
+message_data_with_year$year <- factor(message_data_with_year$year, levels = unique(message_data_with_year$year))
+message_data_with_year <- na.omit(message_data_with_year)
+
+message_data_with_year$year <- factor(message_data_with_year$year, levels = c("2017", "2018", "2019", "2020", "2021", "2022"))
+
+
+ggplot(message_data_with_year, aes(x = year, fill = source)) +
+  geom_bar(color = "black") +
+  labs(x = "", y = "Number of Ads", title = "Number of Advertisements per Year") +
+  theme_bw() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
+  guides(fill = guide_legend(reverse = TRUE, title = "Source"))
+
+```
+
+## Creating a Trump/Biden csv to use in spark for sentiment
+
+```{r}
+
+election_year_month <- merged_data[, c("message", "advertiser", "year_month")]
+
+trump_biden <- election_year_month %>% 
+  filter(advertiser == "Donald J. Trump" | advertiser == "Joe Biden")
+
+trump_biden$message <- gsub("<.*?>", "", trump_biden$message)
+
+trump_biden$message <- gsub("[^[:alpha:][:space:]]", "", trump_biden$message)
+
+library(stringr)
+trump_biden$message <- str_replace_all(trump_biden$message, "\\b[a-zA-Z]{1,2}\\b", "")
+
+#write.csv(trump_biden, "C:/Users/aaron/Downloads/trump_biden.csv", row.names = FALSE)
+
+```
+
+
+## Ignore just trying some stuff
+
+```{r}
+
+#pro_final <- fread("C:/Users/aaron/Downloads/propublica_final.csv")
+
+message_ad_yearmonth <- merged_data[, c("message", "advertiser", "year_month")]
+
+message_ad_yearmonth$message <- gsub("<.*?>", "", message_ad_yearmonth$message)
+
+#message_ad_yearmonth$message <- gsub("[^[:alpha:][:space:]]", "", message_ad_yearmonth$message)
+
+message_ad_yearmonth$message <- str_replace_all(message_ad_yearmonth$message, "\\b[a-zA-Z]{1,2}\\b", "")
+
+message_ad_yearmonth$advertiser <- gsub("<.*?>", "", message_ad_yearmonth$advertiser)
+
+message_ad_yearmonth$advertiser <- gsub("[^[:alpha:][:space:]]", "", message_ad_yearmonth$advertiser)
+
+message_ad_yearmonth$advertiser <- str_replace_all(message_ad_yearmonth$advertiser, "\\b[a-zA-Z]{1,2}\\b", "")
+
+message_ad_yearmonth <- message_ad_yearmonth %>%
+  filter(str_trim(advertiser) != "")
+
+message_ad_yearmonth <- message_ad_yearmonth %>%
+  filter(advertiser != " ")
+
+maym <- message_ad_yearmonth %>%
+            filter(advertiser != "") %>%
+            arrange(desc(advertiser))
+
+maym <- maym %>%
+  slice(-c(1:2429))
+
+maym$year <- substr(maym$year_month, 1, 4)
+
+maym <- maym %>% select(-advertiser, -year_month)
+
+maym$message <- gsub("[^[:alpha:][:space:]]", "", maym$message)
+
+#write.csv(maym, "C:/Users/aaron/Downloads/english_message_year.csv", row.names = FALSE)
+
+```
+
+
+
+## creating a PragerU/TYT csv to use in pyspark
+
+```{r}
+
+election_year_month <- merged_data[, c("message", "advertiser", "year_month")]
+
+media <- election_year_month %>% 
+  filter(advertiser == "The Young Turks" | advertiser == "PragerU")
+
+media$message <- gsub("<.*?>", "", media$message)
+
+#media$message <- gsub("[^[:alpha:][:space:]]", "", media$message)
+
+media$message <- str_replace_all(media$message, "\\b[a-zA-Z]{1,2}\\b", "")
+
+#write.csv(media, "C:/Users/aaron/Downloads/media.csv", row.names = FALSE)
+
+```
+
+
+```{r}
+propub_final <- read.csv(file="C:/Users/aaron/Downloads/propublica_final.csv")
+```
+
+```{r}
+
+join_data <- merged_data %>%
+  filter(source == "ProPublica") %>%
+  select(id, year_month, year, date)
+
+pro <- left_join(propub_final, join_data, by = "id")
+
+```
+
+
+## plotting average word counts for propub
+
+```{r}
+
+pro_plots <- pro[, c("avg_word_length", "word_count", "year_month", "sentiment_score", "date")]
+
+#avg_word_count <- aggregate(word_count ~ year_month, data = pro_plots, FUN = mean)
+
+avg_word_count <- pro_plots %>%
+  group_by(year_month) %>%
+  summarise(word_count = mean(word_count),
+            date = first(floor_date(as_date(date), "month"))) %>%
+  filter(!is.na(date))
+
+#avg_word_count$year_month <- as.Date(avg_word_count$year_month, format = "%Y-%m")
+
+avg_word_count$month_year <- format(avg_word_count$date, "%B %Y")
+
+# plot average word count
+ggplot(avg_word_count, aes(x = date, y = word_count)) +
+  geom_line() +
+  labs(x = "", y = "Average Word Count") +
+  ggtitle("Monthly Average Word Count (ProPublica)") +
+  theme_bw() +
+  scale_x_date(date_labels = "%b %Y", breaks = seq(as.Date("2017-08-01"), as.Date("2019-05-01"), by = "month")) +
+  theme(axis.text.x = element_text(angle = -45, vjust = 0.7, hjust = -0.01))
+
+```
+
+
+## Plotting avg word length
+
+```{r}
+
+pro_plots <- pro[, c("avg_word_length", "word_count", "year_month", "sentiment_score", "date")]
+
+#avg_word_count <- aggregate(word_count ~ year_month, data = pro_plots, FUN = mean)
+
+avg_word_length <- pro_plots %>%
+  group_by(year_month) %>%
+  summarise(avg_word_length = mean(avg_word_length),
+            date = first(floor_date(as_date(date), "month"))) %>%
+  filter(!is.na(date))
+
+#avg_word_count$year_month <- as.Date(avg_word_count$year_month, format = "%Y-%m")
+
+# Format the x-axis labels to display month and year
+avg_word_length$month_year <- format(avg_word_length$date, "%B %Y")
+
+filtered_avg_word_length <- avg_word_length %>%
+  filter(date >= as.Date("2017-08-01") & date <= as.Date("2019-05-01"))
+
+# plot average word count
+ggplot(filtered_avg_word_length, aes(x = date, y = avg_word_length)) +
+  geom_line() +
+  labs(x = "", y = "Average Word Length") +
+  ggtitle("Average Word Length by Month (ProPublica)") +
+  theme_bw() +
+  scale_x_date(date_labels = "%b %Y", breaks = seq(as.Date("2017-08-01"), as.Date("2019-05-31"), by = "month")) +
+  theme(axis.text.x = element_text(angle = -45, vjust = 0.7, hjust = -0.01))
+
+```
+
+## manually inputting the data from pyspark to plot sentiment over time
+
+```{r}
+
+# THIS DATA COMES FROM MY SPARK SENTIMENT ANALYSIS
+
+sentiment_data <- data.frame(
+  year_month = c('Aug 2017', 'Sep 2017', 'Oct 2017', 'Nov 2017', 'Dec 2017',
+                 'Jan 2018', 'Feb 2018', 'Mar 2018', 'Apr 2018', 'May 2018',
+                 'Jun 2018', 'Jul 2018', 'Aug 2018', 'Sep 2018', 'Oct 2018',
+                 'Nov 2018', 'Dec 2018', 'Jan 2019', 'Feb 2019', 'Mar 2019',
+                 'Apr 2019', 'May 2019', 'Dec 2020', 'Jan 2021', 'Feb 2021',
+                 'Mar 2021', 'Jul 2021', 'Aug 2021', 'Sep 2021', 'Oct 2021',
+                 'Nov 2021', 'Dec 2021', 'Jan 2022', 'Feb 2022'),
+  avg_sentiment_score = c(0.1405, 0.2153, 0.1531, 0.2145, 0.2672, 0.2148, 0.2402, 0.2057, 0.1869, 0.2446, 0.2486, 0.2930, 0.3032, 0.3058, 0.3085, 0.3218, 0.3432, 0.3053, 0.3131, 0.2759, 0.3231, 0.2824, 0.0113, 0.0033, 0.0007, 0.0007, 0.0155, 0.0356, 0.0204, 0.0269, 0.0295, 0.0276, 0.0293, 0.0423)
+) %>%
+  mutate(year_month = factor(year_month, levels = c('Aug 2017', 'Sep 2017', 'Oct 2017', 'Nov 2017', 'Dec 2017',
+                 'Jan 2018', 'Feb 2018', 'Mar 2018', 'Apr 2018', 'May 2018',
+                 'Jun 2018', 'Jul 2018', 'Aug 2018', 'Sep 2018', 'Oct 2018',
+                 'Nov 2018', 'Dec 2018', 'Jan 2019', 'Feb 2019', 'Mar 2019',
+                 'Apr 2019', 'May 2019', 'Dec 2020', 'Jan 2021', 'Feb 2021',
+                 'Mar 2021', 'Jul 2021', 'Aug 2021', 'Sep 2021', 'Oct 2021',
+                 'Nov 2021', 'Dec 2021', 'Jan 2022', 'Feb 2022')))
+
+sentiment_data$source <- c(rep("ProPublica", 22), rep("adObserver", 12))
+sentiment_data$source <- factor(sentiment_data$source, levels = c("ProPublica", "adObserver"))
+
+ggplot() +
+  geom_line(data = sentiment_data, aes(x = year_month, y = avg_sentiment_score, group = 1), color = "black") +
+  geom_point(data = sentiment_data, aes(x = year_month, y = avg_sentiment_score, color = source)) +
+  labs(x = " ", y = "Average Sentiment Score", title = "Average Monthly Sentiment Scores") + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = -45)) +
+  ylim(-0.5, 0.5) +
+  scale_color_manual(values = c("ProPublica" = "red", "adObserver" = "blue")) +
+  guides(color = guide_legend(title = "Source")) +
+  theme(axis.text.x = element_text(angle = -45, vjust = 0.7, hjust = -0.01))
+
+```
+
+
+## Manually inputting the data from my pyspark sentiment anaylsis
+
+```{r}
+
+# THIS DATA COMES FROM MY PYSPARK SENTIMENT ANALYSIS
+
+trump_data <- data.frame(
+  year_month = c('Sep 2017', 'Oct 2017', 'Nov 2017', 'Dec 2017',
+                 'Jan 2018', 'Feb 2018', 'Mar 2018', 'Apr 2018', 'May 2018',
+                 'Jun 2018', 'Jul 2018', 'Aug 2018', 'Sep 2018', 'Oct 2018',
+                 'Nov 2018', 'Dec 2018', 'Jan 2019', 'Feb 2019', 'Mar 2019',
+                 'Apr 2019', 'May 2019'),
+  avg_sentiment_score = c(0.2611, 0.6472, -0.0513, 0.2978, 0.0511, 0.2284,
+                          0.3389, 0.1373, 0.6713, 0.3187, -0.3731, -0.0317,
+                          0.075, 0.5574, 0.5341, 0.5281, 0.1954, 0.3772,
+                          -0.0087, 0.1391, 0.204)
+) %>%
+  mutate(year_month = factor(year_month, levels = c('Sep 2017', 'Oct 2017', 'Nov 2017', 'Dec 2017',
+                 'Jan 2018', 'Feb 2018', 'Mar 2018', 'Apr 2018', 'May 2018',
+                 'Jun 2018', 'Jul 2018', 'Aug 2018', 'Sep 2018', 'Oct 2018',
+                 'Nov 2018', 'Dec 2018', 'Jan 2019', 'Feb 2019', 'Mar 2019',
+                 'Apr 2019', 'May 2019')))
+
+biden_data <- data.frame(
+  year_month = c('Sep 2018', 'Oct 2018', 'Nov 2018', 'Dec 2018', 'Apr 2019',
+                 'May 2019'),
+  avg_sentiment_score = c(0.8528, 0.3124, 0.1191, 0.1297, 0.5317, 0.5547))
+
+
+ggplot() +
+  geom_line(data = trump_data, aes(x = year_month, y = avg_sentiment_score, group = 1, color = "Donald Trump")) +
+  geom_point(data = trump_data, aes(x = year_month, y = avg_sentiment_score, color = "Donald Trump")) +
+  geom_line(data = biden_data, aes(x = year_month, y = avg_sentiment_score, group = 1, color = "Joe Biden")) +
+  geom_point(data = biden_data, aes(x = year_month, y = avg_sentiment_score, color = "Joe Biden")) +
+  scale_color_manual(values = c("Donald Trump" = "red", "Joe Biden" = "blue")) +
+  labs(x = " ", y = "Average Sentiment Score", title = "Sentiment Analysis Scores (ProPublica)", color = "Advertiser") + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = -45)) +
+  ylim(-1, 1) +
+  theme(axis.text.x = element_text(angle = -45, vjust = 0.7, hjust = -0.01))
+
+```
+
+## Manually inputting the data from pyspark sentiment analysis
+
+```{r}
+
+# COMES FROM SPARK
+
+prageru <- data.frame(
+  year_month = c('Sep 2017', 'Oct 2017', 'Nov 2017', 'Dec 2017',
+                 'Jan 2018', 'Feb 2018', 'Mar 2018', 'Apr 2018', 'May 2018',
+                 'Jun 2018', 'Jul 2018', 'Aug 2018', 'Sep 2018', 'Oct 2018',
+                 'Nov 2018', 'Dec 2018', 'Jan 2019', 'Feb 2019', 'Mar 2019',
+                 'Apr 2019', 'May 2019'),
+  avg_sentiment_score = c(0.1468, 0.0401, 0.7145, 0.1759, 0.0941, 0.1169,
+                          0.0519, 0.0667, 0.0787, -0.0966, 0.0648, -0.0328,
+                          -0.0624, 0.1934, 0.1332, 0.1501, -0.2803, 0.0436, 
+                          0.0303, 0.0791, 0.2171)
+) %>%
+  mutate(year_month = factor(year_month, levels = c('Sep 2017', 'Oct 2017', 'Nov 2017', 'Dec 2017',
+                 'Jan 2018', 'Feb 2018', 'Mar 2018', 'Apr 2018', 'May 2018',
+                 'Jun 2018', 'Jul 2018', 'Aug 2018', 'Sep 2018', 'Oct 2018',
+                 'Nov 2018', 'Dec 2018', 'Jan 2019', 'Feb 2019', 'Mar 2019',
+                 'Apr 2019', 'May 2019')))
+
+tyt <- data.frame(
+  year_month = c('Nov 2017', 'Dec 2017',
+                 'Feb 2018', 'Mar 2018', 'Apr 2018', 'May 2018',
+                 'Jun 2018', 'Jul 2018', 'Aug 2018', 'Sep 2018',
+                 'Nov 2018'),
+  avg_sentiment_score = c(0.0, -0.5423, -0.1126, 0.0413, 0.1083, 0.2067,
+                          0.2922, 0.2616, 0.2214, 0.2027, 0.0000))
+
+ggplot() +
+  geom_line(data = prageru, aes(x = year_month, y = avg_sentiment_score, group = 1, color = "PragerU")) +
+  geom_point(data = prageru, aes(x = year_month, y = avg_sentiment_score, color = "PragerU")) +
+  geom_line(data = tyt, aes(x = year_month, y = avg_sentiment_score, group = 1, color = "The Young Turks")) +
+  geom_point(data = tyt, aes(x = year_month, y = avg_sentiment_score, color = "The Young Turks")) +
+  scale_color_manual(values = c("PragerU" = "red", "The Young Turks" = "blue")) +
+  labs(x = " ", y = "Average Sentiment Score", title = "Sentiment Analysis Scores (ProPublica)", color = "Advertiser") + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = -45)) +
+  ylim(-1, 1) +
+  theme(axis.text.x = element_text(angle = -45, vjust = 0.7, hjust = -0.01))
+
+```
+
+## These words and their frequencies come from pyspark output
+
+```{r}
+ 
+# manually inputting data
+
+word_freq_2017 <- data.frame(
+  word = c("help", "span", "trump", "need", "people", "congress", "make", "support", "fight", "today"),
+  count = c(2522, 2139, 2028, 1906, 1681, 1337, 1300, 1285, 1272, 1124)
+)
+
+total_count_2017 <- sum(word_freq_2017$count)
+word_freq_2017$proportion <- round((word_freq_2017$count / total_count_2017) * 100)
+
+colors <- brewer.pal(8, "Set2")
+
+word_colors_2017 <- sample(colors, nrow(word_freq_2017), replace = TRUE)
+
+wordcloud(
+  words = word_freq_2017$word,
+  freq = word_freq_2017$proportion,
+  colors = word_colors_2017,
+  scale = c(5, 1),
+  random.order = FALSE,
+  rot.per = 0.3,
+  min.freq = 1,
+  max.words = 50,
+  random.color = FALSE,
+  main = "2017"
+)
+
+
+word_freq_2018 <- data.frame(word = c("help", "need", "vote", "people", "make", "get", "trump", "span", "like", "time"),
+                      count = c(23847, 18561, 18260, 17063, 15704, 13461, 13382, 13148, 12745, 12674))
+
+total_count_2018 <- sum(word_freq_2018$count)
+word_freq_2018$proportion <- round((word_freq_2018$count / total_count_2018) * 100)
+
+
+word_colors_2018 <- sample(colors, nrow(word_freq_2018), replace = TRUE)
+
+wordcloud(
+  words = word_freq_2018$word,
+  freq = word_freq_2018$proportion,
+  colors = word_colors_2018,
+  scale = c(5, 1),
+  random.order = FALSE,
+  rot.per = 0.3,
+  min.freq = 1,
+  max.words = 50,
+  random.color = FALSE,
+  main = "2018"
+)
+
+
+word_freq_2019 <- data.frame(word = c("need", "help", "class", "get", "make", "span", "people", "campaign", "today", "time"),
+                      count = c(10969, 10328, 8911, 8024, 6918, 6712, 6256, 6154, 6139, 5313))
+
+total_count_2019 <- sum(word_freq_2019$count)
+word_freq_2019$proportion <- round((word_freq_2019$count / total_count_2019) * 100)
+
+word_colors_2019 <- sample(colors, nrow(word_freq_2019), replace = TRUE)
+
+wordcloud(
+  words = word_freq_2019$word,
+  freq = word_freq_2019$proportion,
+  colors = word_colors_2019,
+  scale = c(5, 1),
+  random.order = FALSE,
+  rot.per = 0.3,
+  min.freq = 1,
+  max.words = 50,
+  random.color = FALSE,
+  main = "2019"
+)
+
+
+word_freq_2020 <- data.frame(word = c("learn", "like", "donate", "sign", "shop", "paid", "see", "apply", "page", "help"),
+                      count = c(264, 91, 76, 60, 59, 10, 9, 7, 7, 6))
+
+total_count_2020 <- sum(word_freq_2020$count)
+word_freq_2020$proportion <- round((word_freq_2020$count / total_count_2020) * 100)
+
+word_colors_2020 <- sample(colors, nrow(word_freq_2020), replace = TRUE)
+
+wordcloud(
+  words = word_freq_2020$word,
+  freq = word_freq_2020$proportion,
+  colors = word_colors_2020,
+  scale = c(5, 1),
+  random.order = FALSE,
+  rot.per = 0.3,
+  min.freq = 1,
+  max.words = 50,
+  random.color = FALSE,
+  main = "2020"
+)
+
+
+word_freq_2021 <- data.frame(word = c("learn", "sign", "donate", "like", "shop", "see", "send", "get", "confirmed", "vaccine"),
+                      count = c(10612, 4874, 3808, 2115, 1403, 1231, 1089, 883, 829, 501))
+
+total_count_2021 <- sum(word_freq_2021$count)
+word_freq_2021$proportion <- round((word_freq_2021$count / total_count_2021) * 100)
+
+
+word_colors_2021 <- sample(colors, nrow(word_freq_2021), replace = TRUE)
+
+wordcloud(
+  words = word_freq_2021$word,
+  freq = word_freq_2021$proportion,
+  colors = word_colors_2021,
+  scale = c(5, 1),
+  random.order = FALSE,
+  rot.per = 0.3,
+  min.freq = 1,
+  max.words = 50,
+  random.color = FALSE,
+  main = "2021"
+)
+
+
+word_freq_2022 <- data.frame(word = c("sign", "like", "learn", "see", "send", "confirmed", "donate", "new", "covid", "get"),
+                      count = c(533, 505, 360, 224, 218, 165, 142, 89, 52, 51))
+
+total_count_2022 <- sum(word_freq_2022$count)
+word_freq_2022$proportion <- round((word_freq_2022$count / total_count_2022) * 100)
+
+word_colors_2022 <- sample(colors, nrow(word_freq_2022), replace = TRUE)
+
+wordcloud(
+  words = word_freq_2022$word,
+  freq = word_freq_2022$proportion,
+  colors = word_colors_2021,
+  scale = c(5, 1),
+  random.order = FALSE,
+  rot.per = 0.3,
+  min.freq = 1,
+  max.words = 50,
+  random.color = FALSE,
+  main = "2022"
+)
+
+
+```
+
+
+
