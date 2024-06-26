@@ -33,7 +33,7 @@ Baab is hoping that you will find something interesting to help him convince his
 
 *Nikolas Santamaria*
 - Fuzzy Text Matching (Python)
-- Research on advertisement data collection process
+- Exploratory data analysis on advertisement data collection process
 - Presentation Slides
 
 ## Project Summary
