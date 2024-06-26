@@ -32,6 +32,7 @@ Baab is hoping that you will find something interesting to help him convince his
 - Data Munging (Python)
 
 *Nikolas Santamaria*
+- Fuzzy Text Matching (Python)
 - Research on advertisement data collection process
 - Presentation Slides
 
